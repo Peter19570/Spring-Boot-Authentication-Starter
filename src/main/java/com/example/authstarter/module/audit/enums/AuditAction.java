@@ -1,0 +1,18 @@
+package com.example.authstarter.module.audit.enums;
+
+public enum AuditAction {
+    REGISTER,
+    LOGIN,
+    LOGIN_FAILURE,
+    LOGIN_ATTEMPT,
+    LOGOUT,
+    PASSWORD_REQUEST,
+    PASSWORD_RESET,
+    EMAIL_VERIFIED,
+    EMAIL_CHANGE_REQUEST,
+    EMAIL_CHANGE_CONFIRM,
+    ACCOUNT_SOFT_DELETED,
+    ACCOUNT_HARD_DELETED,
+    SOCIAL_LINK,
+    SOCIAL_UNLINK
+}
