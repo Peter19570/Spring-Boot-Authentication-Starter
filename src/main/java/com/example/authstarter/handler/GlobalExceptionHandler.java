@@ -1,4 +1,4 @@
-package com.example.authstarter.exception;
+package com.example.authstarter.handler;
 
 import com.example.authstarter.module.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.module.auth.exceptions.NotFoundException;

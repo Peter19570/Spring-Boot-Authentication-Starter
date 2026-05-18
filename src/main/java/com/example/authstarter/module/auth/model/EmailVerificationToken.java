@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,6 +17,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Table(name = "email_verification_tokens")
+@EntityListeners(AuditingEntityListener.class)
 public class EmailVerificationToken{
 
     @Id
@@ -37,6 +40,6 @@ public class EmailVerificationToken{
     @Column(nullable = false)
     private Instant expiresAt;
 
-    @CreationTimestamp
+    @CreatedDate
     private Instant createdAt;
 }
