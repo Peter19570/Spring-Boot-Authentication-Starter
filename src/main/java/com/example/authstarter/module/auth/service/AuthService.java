@@ -30,6 +30,7 @@ import com.example.authstarter.module.users.service.UserService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -71,6 +72,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final GoogleIdTokenVerifier verifier;
 
+    private final ApplicationEventPublisher eventPublisher;
+
 //    =========================================================================================
 //    MAJOR AUTHENTICATION METHODS HERE
 //    =========================================================================================
@@ -82,17 +85,8 @@ public class AuthService {
 
         User user = authMapper.toEntityFromAuth(request);
         user.setPassword(passwordEncoder.encode(request.password()));
-
-        String rawToken = UUID.randomUUID().toString();
-
-        emailService.sendVerificationEmail(user.getEmail(), rawToken);
         CustomUserPrincipal principal = new CustomUserPrincipal(userRepo.save(user));
-
-        EmailVerificationToken verificationToken = new EmailVerificationToken();
-        verificationToken.setUser(principal.user());
-        verificationToken.setTokenHash(hashToken(rawToken));
-        verificationToken.setExpiresAt(Instant.now().plus(Duration.ofDays(1)));
-        emailVerificationTokenRepo.save(verificationToken);
+        eventPublisher.publishEvent(principal.user());
 
         auditService.handleAuditEvent(new AuditRequest(principal.user(), AuditAction.REGISTER,
                 Map.of("message", "New user created")));
@@ -217,10 +211,7 @@ public class AuthService {
                 Map.of("message", "Email verified successfully")));
     }
 
-    public void requestEmailChange(UUID userId, String newEmail) {
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
+    public void requestEmailChange(User user, String newEmail) {
         if (user.getPassword() == null) {
             throw new ValidationException("Cannot reset email with empty password");
         }

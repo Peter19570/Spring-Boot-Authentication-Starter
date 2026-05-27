@@ -96,7 +96,7 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody @Valid EmailChangeRequest request) {
 
-        authService.requestEmailChange(principal.user().getId(), request.newEmail());
+        authService.requestEmailChange(principal.user(), request.newEmail());
         return ResponseEntity.ok(new ApiResponse<>(
                 "Email verification link sent", null));
     }

@@ -11,5 +11,6 @@ public interface AuthMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "password", ignore = true)
+    @Mapping(target = "provider", constant = "LOCAL")
     User toEntityFromAuth(AuthRequest request);
 }

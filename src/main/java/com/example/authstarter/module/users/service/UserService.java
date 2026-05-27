@@ -55,7 +55,15 @@ public class UserService {
             existingUser.setLastName(payload.get("family_name").toString());
             existingUser.setPicture(payload.get("picture").toString());
             existingUser.setEmailVerified(true);
-            existingUser.setProvider("GOOGLE");
+
+            String provider = existingUser.getProvider();
+
+            if (provider == null) {
+                existingUser.setProvider("GOOGLE");
+            } else if (!provider.contains("GOOGLE")) {
+                existingUser.setProvider(provider + ",GOOGLE");
+            }
+
             userRepo.save(existingUser);
         }
 
