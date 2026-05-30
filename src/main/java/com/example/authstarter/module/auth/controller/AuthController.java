@@ -96,14 +96,14 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody @Valid EmailChangeRequest request) {
 
-        authService.requestEmailChange(principal.user(), request.newEmail());
+        authService.requestEmailChange(principal.user(), request);
         return ResponseEntity.ok(new ApiResponse<>(
                 "Email verification link sent", null));
     }
 
     @GetMapping("/email-change/confirm")
     public ResponseEntity<ApiResponse<Void>> confirmChange(
-            @RequestParam("token") String token) {
+            @RequestParam("token") @NotNull(message = "Token is required") String token) {
         authService.confirmEmailChange(token);
         return ResponseEntity.ok(new ApiResponse<>(
                 "Email Update Success", null));

@@ -38,7 +38,7 @@ public class UserController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody AccountDeletionRequest request) {
         userService.confirmSoftDelete(
-                principal.user().getId(),
+                principal.user(),
                 request.password(),
                 request.otp()
         );

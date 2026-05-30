@@ -32,7 +32,6 @@ public class AuditService {
     @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleAuditEvent(AuditRequest request) {
-
         AuditLog audit = AuditLog.builder()
                 .userId(request.user().getId())
                 .fullName(request.user().getFirstName() + " " + request.user().getLastName())

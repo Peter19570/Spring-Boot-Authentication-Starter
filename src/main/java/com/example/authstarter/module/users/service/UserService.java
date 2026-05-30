@@ -16,6 +16,8 @@ import com.example.authstarter.module.users.model.User;
 import com.example.authstarter.module.users.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,19 +34,19 @@ public class UserService {
 
     private final UserRepo userRepo;
     private final UserMapper userMapper;
-    private final AuditService auditService;
     private final OtpService otpService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
     private final EmailVerificationTokenRepo emailVerificationTokenRepo;
     private final PasswordResetTokenRepo passwordResetTokenRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
     public User syncUser(GoogleIdToken.Payload payload){
         User existingUser =  userRepo.findByEmail(payload.getEmail()).orElseGet(() -> {
             User user = userMapper.toEntityFromGoogle(payload);
 
-            auditService.handleAuditEvent(new AuditRequest(user, AuditAction.REGISTER,
+            eventPublisher.publishEvent(new AuditRequest(user, AuditAction.REGISTER,
                     Map.of("message", "User created account with Google login")));
 
             return userRepo.save(user);
@@ -67,7 +69,7 @@ public class UserService {
             userRepo.save(existingUser);
         }
 
-        auditService.handleAuditEvent(new AuditRequest(existingUser, AuditAction.LOGIN,
+        eventPublisher.publishEvent(new AuditRequest(existingUser, AuditAction.LOGIN,
                 Map.of("message", "Google login success")));
 
         return existingUser;
@@ -83,12 +85,9 @@ public class UserService {
         emailService.sendAccountDeletionCode(user.getEmail(), code);
     }
 
-    public void confirmSoftDelete(UUID userId, String password, String otp) {
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
+    public void confirmSoftDelete(User user, String password, String otp) {
         if (user.getPassword() != null) {
-            if (password == null || !passwordEncoder.matches(password, user.getPassword())) {
+            if (!passwordEncoder.matches(password, user.getPassword())) {
                 throw new BadCredentialsException("Invalid password provided for account deletion.");
             }
         }
@@ -103,7 +102,7 @@ public class UserService {
         emailVerificationTokenRepo.deleteByUser(user);
         userRepo.save(user);
 
-        auditService.handleAuditEvent(new AuditRequest(user, AuditAction.ACCOUNT_SOFT_DELETED,
+        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.ACCOUNT_SOFT_DELETED,
                 Map.of("message", "User has been soft deleted")));
     }
 }

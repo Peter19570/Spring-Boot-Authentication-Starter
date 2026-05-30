@@ -3,6 +3,7 @@ package com.example.authstarter.module.audit.enums;
 public enum AuditAction {
     REGISTER,
     LOGIN,
+    OAUTH_LOGIN,
     LOGIN_FAILURE,
     LOGIN_ATTEMPT,
     LOGOUT,
