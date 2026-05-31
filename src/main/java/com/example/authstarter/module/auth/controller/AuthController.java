@@ -40,7 +40,7 @@ public class AuthController {
                 "Register success", response));
     }
 
-    @PostMapping("/login")
+    @PostMapping("/autenticate")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody AuthRequest request
     ) {
