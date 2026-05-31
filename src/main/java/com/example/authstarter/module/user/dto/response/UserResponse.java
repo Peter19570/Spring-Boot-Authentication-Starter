@@ -1,4 +1,4 @@
-package com.example.authstarter.module.users.dto.response;
+package com.example.authstarter.module.user.dto.response;
 
 import java.util.UUID;
 

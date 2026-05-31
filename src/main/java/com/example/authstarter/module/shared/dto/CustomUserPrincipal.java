@@ -1,6 +1,6 @@
 package com.example.authstarter.module.shared.dto;
 
-import com.example.authstarter.module.users.model.User;
+import com.example.authstarter.module.user.model.User;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -2,11 +2,9 @@ package com.example.authstarter.module.audit.service;
 
 import com.example.authstarter.module.audit.dto.AuditRequest;
 import com.example.authstarter.module.audit.dto.AuditResponse;
-import com.example.authstarter.module.audit.enums.AuditAction;
 import com.example.authstarter.module.audit.mapper.AuditMapper;
 import com.example.authstarter.module.audit.model.AuditLog;
 import com.example.authstarter.module.audit.repo.AuditRepo;
-import com.example.authstarter.module.users.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
@@ -15,10 +13,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

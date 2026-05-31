@@ -1,22 +1,19 @@
-package com.example.authstarter.module.users.service;
+package com.example.authstarter.module.user.service;
 
 import com.example.authstarter.module.audit.dto.AuditRequest;
 import com.example.authstarter.module.audit.enums.AuditAction;
-import com.example.authstarter.module.audit.service.AuditService;
-import com.example.authstarter.module.auth.exceptions.NotFoundException;
 import com.example.authstarter.module.auth.exceptions.ValidationException;
 import com.example.authstarter.module.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.module.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.module.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.module.auth.service.notification.EmailService;
 import com.example.authstarter.module.auth.service.notification.OtpService;
-import com.example.authstarter.module.users.dto.response.UserDetailsResponse;
-import com.example.authstarter.module.users.mapper.UserMapper;
-import com.example.authstarter.module.users.model.User;
-import com.example.authstarter.module.users.repo.UserRepo;
+import com.example.authstarter.module.user.dto.response.UserDetailsResponse;
+import com.example.authstarter.module.user.mapper.UserMapper;
+import com.example.authstarter.module.user.model.User;
+import com.example.authstarter.module.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @Transactional

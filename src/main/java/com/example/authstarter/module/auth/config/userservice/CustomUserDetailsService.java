@@ -1,8 +1,8 @@
 package com.example.authstarter.module.auth.config.userservice;
 
 import com.example.authstarter.module.shared.dto.CustomUserPrincipal;
-import com.example.authstarter.module.users.model.User;
-import com.example.authstarter.module.users.repo.UserRepo;
+import com.example.authstarter.module.user.model.User;
+import com.example.authstarter.module.user.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.UserDetails;

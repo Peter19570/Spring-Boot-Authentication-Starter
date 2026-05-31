@@ -1,8 +1,8 @@
-package com.example.authstarter.module.users.mapper;
+package com.example.authstarter.module.user.mapper;
 
-import com.example.authstarter.module.users.dto.response.UserDetailsResponse;
-import com.example.authstarter.module.users.dto.response.UserResponse;
-import com.example.authstarter.module.users.model.User;
+import com.example.authstarter.module.user.dto.response.UserDetailsResponse;
+import com.example.authstarter.module.user.dto.response.UserResponse;
+import com.example.authstarter.module.user.model.User;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

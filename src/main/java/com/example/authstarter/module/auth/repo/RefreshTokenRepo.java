@@ -1,7 +1,7 @@
 package com.example.authstarter.module.auth.repo;
 
 import com.example.authstarter.module.auth.model.RefreshToken;
-import com.example.authstarter.module.users.model.User;
+import com.example.authstarter.module.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

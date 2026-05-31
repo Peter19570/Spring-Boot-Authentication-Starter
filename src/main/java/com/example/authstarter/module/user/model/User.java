@@ -1,4 +1,4 @@
-package com.example.authstarter.module.users.model;
+package com.example.authstarter.module.user.model;
 
 import com.example.authstarter.module.auth.model.EmailVerificationToken;
 import com.example.authstarter.module.auth.model.PasswordResetToken;

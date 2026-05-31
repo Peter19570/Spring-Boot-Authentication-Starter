@@ -1,7 +1,7 @@
 package com.example.authstarter.module.auth.mapper;
 
 import com.example.authstarter.module.auth.dto.request.AuthRequest;
-import com.example.authstarter.module.users.model.User;
+import com.example.authstarter.module.user.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

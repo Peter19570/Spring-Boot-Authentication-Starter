@@ -1,10 +1,10 @@
-package com.example.authstarter.module.users.controller;
+package com.example.authstarter.module.user.controller;
 
 import com.example.authstarter.module.auth.dto.request.AccountDeletionRequest;
 import com.example.authstarter.module.shared.dto.ApiResponse;
 import com.example.authstarter.module.shared.dto.CustomUserPrincipal;
-import com.example.authstarter.module.users.dto.response.UserDetailsResponse;
-import com.example.authstarter.module.users.service.UserService;
+import com.example.authstarter.module.user.dto.response.UserDetailsResponse;
+import com.example.authstarter.module.user.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,6 +1,6 @@
-package com.example.authstarter.module.users.repo;
+package com.example.authstarter.module.user.repo;
 
-import com.example.authstarter.module.users.model.User;
+import com.example.authstarter.module.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

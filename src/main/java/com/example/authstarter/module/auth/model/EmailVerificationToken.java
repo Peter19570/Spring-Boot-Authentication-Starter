@@ -1,11 +1,10 @@
 package com.example.authstarter.module.auth.model;
 
-import com.example.authstarter.module.users.model.User;
+import com.example.authstarter.module.user.model.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
