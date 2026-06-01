@@ -40,7 +40,7 @@ public class AuthController {
                 "Register success", response));
     }
 
-    @PostMapping("/autenticate")
+    @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody AuthRequest request
     ) {
@@ -64,7 +64,7 @@ public class AuthController {
             @Valid @RequestBody RefreshTokenRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        authService.logout(request.refreshToken(), principal.user());
+        authService.logout(request, principal.user());
         return ResponseEntity.ok(new ApiResponse<>(
                 "Logout success", null));
     }
@@ -90,7 +90,7 @@ public class AuthController {
                 "Email verified successfully!", null));
     }
 
-    @PostMapping("/email-change/request")
+    @PostMapping("/change-email")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> requestChange(
             @AuthenticationPrincipal CustomUserPrincipal principal,
@@ -101,9 +101,11 @@ public class AuthController {
                 "Email verification link sent", null));
     }
 
-    @GetMapping("/email-change/confirm")
+    @GetMapping("/confirm-email")
     public ResponseEntity<ApiResponse<Void>> confirmChange(
-            @RequestParam("token") @NotNull(message = "Token is required") String token) {
+            @RequestParam("token")
+            @NotNull(message = "Token is required")
+            String token) {
         authService.confirmEmailChange(token);
         return ResponseEntity.ok(new ApiResponse<>(
                 "Email Update Success", null));

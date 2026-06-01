@@ -26,5 +26,5 @@ public interface RefreshTokenRepo extends JpaRepository<RefreshToken, UUID> {
     // for the active sessions screen later
     List<RefreshToken> findAllByUserAndRevokedFalseAndExpiresAtAfter(User user, Instant now);
 
-    void deleteByUser(User user);
+    void deleteByUserId(UUID userId);
 }

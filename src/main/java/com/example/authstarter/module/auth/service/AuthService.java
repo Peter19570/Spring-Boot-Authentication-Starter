@@ -162,11 +162,11 @@ public class AuthService {
         return createTokenResponse(jwtService, user);
     }
 
-    public void logout(String refreshToken, User user) {
+    public void logout(RefreshTokenRequest request, User user) {
         eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGOUT,
                 Map.of("message", "User logout success")));
 
-        refreshTokenRepo.findByTokenHash(refreshToken)
+        refreshTokenRepo.findByTokenHash(request.refreshToken())
                 .ifPresent(token -> {
                     token.setRevoked(true);
                     refreshTokenRepo.save(token);

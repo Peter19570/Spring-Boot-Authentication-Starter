@@ -20,13 +20,13 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserDetailsResponse>> userInfo(
+    public ResponseEntity<ApiResponse<UserDetailsResponse>> getCurrentUser(
             @AuthenticationPrincipal CustomUserPrincipal principal){
-        UserDetailsResponse response = userService.userInfo(principal.user());
+        UserDetailsResponse response = userService.getCurrentUser(principal.user());
         return ResponseEntity.ok(new ApiResponse<>("User Information", response));
     }
 
-    @PostMapping("/me/delete-request")
+    @PostMapping("/me/deletion-request")
     public ResponseEntity<Void> requestDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal) {
         userService.initiateDeletion(principal.user());

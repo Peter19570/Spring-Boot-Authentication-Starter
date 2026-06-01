@@ -72,7 +72,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetailsResponse userInfo(User user){
+    public UserDetailsResponse getCurrentUser(User user){
         return userMapper.toDetailsDto(user);
     }
 
@@ -93,9 +93,9 @@ public class UserService {
         }
 
         user.setDeletedAt(Instant.now());
-        refreshTokenRepo.deleteByUser(user);
-        passwordResetTokenRepo.deleteByUser(user);
-        emailVerificationTokenRepo.deleteByUser(user);
+        refreshTokenRepo.deleteByUserId(user.getId());
+        passwordResetTokenRepo.deleteByUserId(user.getId());
+        emailVerificationTokenRepo.deleteByUserId(user.getId());
         userRepo.save(user);
 
         eventPublisher.publishEvent(new AuditRequest(user, AuditAction.ACCOUNT_SOFT_DELETED,
