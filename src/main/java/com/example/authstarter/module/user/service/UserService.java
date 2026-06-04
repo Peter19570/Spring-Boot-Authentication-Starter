@@ -72,33 +72,33 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetailsResponse getCurrentUser(User user){
-        return userMapper.toDetailsDto(user);
+    public UserDetailsResponse getCurrentUser(User currentUser){
+        return userMapper.toDetailsDto(currentUser);
     }
 
-    public void initiateDeletion(User user) {
-        String code = otpService.generateOtp(user.getEmail());
-        emailService.sendAccountDeletionCode(user.getEmail(), code);
+    public void initiateDeletion(User currentUser) {
+        String code = otpService.generateOtp(currentUser.getEmail());
+        emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    public void confirmSoftDelete(User user, String password, String otp) {
-        if (user.getPassword() != null) {
-            if (!passwordEncoder.matches(password, user.getPassword())) {
+    public void confirmSoftDelete(User currentUser, String password, String otp) {
+        if (currentUser.getPassword() != null) {
+            if (!passwordEncoder.matches(password, currentUser.getPassword())) {
                 throw new BadCredentialsException("Invalid password provided for account deletion.");
             }
         }
 
-        if (!otpService.validateOtp(user.getEmail(), otp.replaceAll("\\s+", ""))) {
+        if (!otpService.validateOtp(currentUser.getEmail(), otp.replaceAll("\\s+", ""))) {
             throw new ValidationException("Invalid or expired deletion code.");
         }
 
-        user.setDeletedAt(Instant.now());
-        refreshTokenRepo.deleteByUserId(user.getId());
-        passwordResetTokenRepo.deleteByUserId(user.getId());
-        emailVerificationTokenRepo.deleteByUserId(user.getId());
-        userRepo.save(user);
+        currentUser.setDeletedAt(Instant.now());
+        refreshTokenRepo.deleteByUserId(currentUser.getId());
+        passwordResetTokenRepo.deleteByUserId(currentUser.getId());
+        emailVerificationTokenRepo.deleteByUserId(currentUser.getId());
+        userRepo.save(currentUser);
 
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.ACCOUNT_SOFT_DELETED,
+        eventPublisher.publishEvent(new AuditRequest(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
                 Map.of("message", "User has been soft deleted")));
     }
 }

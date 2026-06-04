@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { background-color: #001A33; padding: 30px; text-align: center; }
+        .header h1 { color: #FFD700; margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .content { padding: 40px; color: #333333; line-height: 1.6; }
+        .info-box { background-color: #f9f9f9; border-left: 4px solid #001A33; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .footer { background-color: #eeeeee; padding: 20px; text-align: center; font-size: 12px; color: #777777; }
+        .warning { font-size: 11px; color: #999999; margin-top: 20px; border-top: 1px solid #eeeeee; padding-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Auth Starter</h1>
+    </div>
+    <div class="content">
+        <p>Hello <span th:text="${greetingName}">User</span>,</p>
+        <p>We received a request to reset the password for the account associated with this email address.</p>
+
+        <div class="info-box">
+            <p style="margin: 0;">Our records show that you typically log in using your <strong th:text="${provider}">Social</strong> account. Because of this, you do not have a separate password set up on our platform.</p>
+        </div>
+
+        <p><strong>How to log in:</strong><br>
+            Simply go to the login page and click the <strong>"Continue with <span th:text="${provider}">Social</span>"</strong> button.</p>
+
+        <p>If you would like to create a unique password for this account, please log in via <span th:text="${provider}">Social</span> first, then visit your Account Settings to set a new password.</p>
+
+        <p>If you did not request this, you can safely ignore this email.</p>
+
+        <p>Best regards,<br><strong>System Administrator</strong></p>
+
+        <div class="warning">
+            This is an automated security message. If you didn't initiate this request, no action is needed.
+        </div>
+    </div>
+    <div class="footer">
+        &copy; <span th:text="${currentYear}">2026</span> Auth Starter | Security Services
+    </div>
+</div>
+</body>
+</html>

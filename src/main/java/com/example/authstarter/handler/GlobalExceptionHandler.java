@@ -1,10 +1,10 @@
 package com.example.authstarter.handler;
 
 import com.example.authstarter.module.auth.exceptions.AlreadyExistException;
+import com.example.authstarter.module.auth.exceptions.AuthenticationException;
 import com.example.authstarter.module.auth.exceptions.NotFoundException;
 import com.example.authstarter.module.auth.exceptions.ValidationException;
 import com.example.authstarter.module.shared.dto.ApiResponse;
-import org.apache.tomcat.websocket.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(
                         "Internal Server Error",
                         "Error caught: " + ex.getClass().getSimpleName()
-                                + "Error Info: " + ex.getMessage()));
+                                + " Error Info: " + ex.getMessage()));
     }
 
     @ExceptionHandler(AlreadyExistException.class)
@@ -32,7 +32,11 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>("Conflict", ex.getMessage()));
     }
 
-    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    @ExceptionHandler({
+            BadCredentialsException.class,
+            UsernameNotFoundException.class,
+            IllegalStateException.class
+    })
     public ResponseEntity<ApiResponse<String>> handleUnauthorizedException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)

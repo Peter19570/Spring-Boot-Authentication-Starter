@@ -51,6 +51,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 CustomUserPrincipal principal = customUserDetailsService.loadUserById(userId);
 
                 if (jwtService.isTokenValid(jwt, principal.user().getId().toString())) {
+
+                    if (jwtService.extractTokenType(jwt).equals("refresh")){
+                        throw new IllegalStateException("Invalid token type. Access token required.");
+                    }
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             principal,
                             null,
@@ -62,7 +67,7 @@ public class JwtFilter extends OncePerRequestFilter {
             }
             filterChain.doFilter(request, response);
 
-        } catch (JwtException | UsernameNotFoundException e) {
+        } catch (JwtException | UsernameNotFoundException | IllegalStateException e) {
             handleException(response, "Unauthorized: " + e.getMessage());
         }
     }

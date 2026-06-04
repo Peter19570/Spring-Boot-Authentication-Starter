@@ -156,6 +156,10 @@ public class AuthService {
                         !refreshToken.isRevoked() && refreshToken.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Refresh token is invalid or expired"));
 
+        if (!jwtService.extractTokenType(storedToken.getTokenHash()).equals("refresh")){
+            throw new IllegalStateException("Invalid token type. Refresh token required.");
+        }
+
         storedToken.setRevoked(true);
         refreshTokenRepo.save(storedToken);
 
@@ -263,7 +267,7 @@ public class AuthService {
         boolean isNotGoogleUser = !"GOOGLE".equals(user.getProvider());
 
         if (hasNoPassword && isNotGoogleUser) {
-            emailService.sendSocialLoginReminder(user.getEmail(), user.getProvider());
+            emailService.sendSocialLoginReminder(user, user.getProvider());
             return;
         }
 
@@ -274,7 +278,7 @@ public class AuthService {
         resetToken.setExpiresAt(Instant.now().plus(Duration.ofMinutes(15)));
         passwordResetTokenRepo.save(resetToken);
 
-        emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
+        emailService.sendPasswordResetEmail(user, rawToken);
         eventPublisher.publishEvent(new AuditRequest(user, AuditAction.PASSWORD_REQUEST,
                 Map.of("message", "Password change requested for user")));
     }

@@ -1,6 +1,7 @@
 package com.example.authstarter.module.auth.service.notification;
 
 import com.example.authstarter.module.auth.exceptions.AuthenticationException;
+import com.example.authstarter.module.user.model.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -9,117 +10,109 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import java.time.Year;
 
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
     @Async("emailExecutor")
-    public void sendVerificationEmail(String email, String token) {
+    public void sendVerificationEmail(User user, String token) {
         String link = frontendUrl + "/verify-email?token=" + token;
-        sendHtmlEmail(email, "Verify your email",
-                "Click <a href=\"" + link + "\">here</a> to verify your account.");
+
+        Context context = new Context();
+        context.setVariable("greetingName", getGreetingName(user));
+        context.setVariable("link", link);
+        context.setVariable("currentYear", Year.now().getValue());
+
+        String htmlContent = templateEngine.process("verification-email", context);
+
+        if (user != null) {
+            sendHtmlEmail(user.getEmail(), "Verify your email address", htmlContent);
+        }
     }
 
     @Async("emailExecutor")
-    public void sendPasswordResetEmail(String email, String token) {
+    public void sendPasswordResetEmail(User user, String token) {
         String link = frontendUrl + "/reset-password?token=" + token;
-        sendHtmlEmail(email, "Reset your password",
-                "Click <a href=\"" + link +
-                        "\">here</a> to reset your password. Link expires in 15 minutes.");
+
+        Context context = new Context();
+        context.setVariable("greetingName", getGreetingName(user));
+        context.setVariable("link", link);
+        context.setVariable("currentYear", Year.now().getValue());
+
+        String htmlContent = templateEngine.process("password-reset-email", context);
+
+        if (user != null) {
+            sendHtmlEmail(user.getEmail(), "Reset your password", htmlContent);
+        }
     }
 
     @Async("emailExecutor")
-    public void sendSocialLoginReminder(String email, String provider) {
+    public void sendSocialLoginReminder(User user, String provider) {
         String formattedProvider = provider.substring(0, 1).toUpperCase() +
                 provider.substring(1).toLowerCase();
 
+        Context context = new Context();
+        context.setVariable("greetingName", getGreetingName(user));
+        context.setVariable("provider", formattedProvider);
+        context.setVariable("currentYear", Year.now().getValue());
+
+        String htmlContent = templateEngine.process("social-login-reminder-email", context);
+
         String subject = "Information regarding your password reset request";
 
-        // 2. Build the message body
-        // In a real prod app, you'd use a Thymeleaf or FreeMarker template here.
-        String message = String.format(
-                """
-                        Hello,
-                       \s
-                        We received a request to reset the password for the account associated with this email address.
-                       \s
-                        However, our records show that you typically log in using your **%s** account. \
-                        Because of this, you do not have a separate password set up on our platform.
-                       \s
-                        **How to log in:**
-                        Simply go to the login page and click the 'Continue with %s' button.
-                       \s
-                        If you would like to create a unique password for this account, please log in via %s first, \
-                        then visit your Account Settings to set a new password.
-                       \s
-                        If you did not request this, you can safely ignore this email.
-                       \s
-               \s""",
-                formattedProvider, formattedProvider, formattedProvider
-        );
-
-        // 3. Send the email (using your existing mail infrastructure)
-        sendHtmlEmail(email, subject, message);
+        if (user != null) {
+            sendHtmlEmail(user.getEmail(), subject, htmlContent);
+        }
     }
 
     @Async("emailExecutor")
-    public void sendAccountDeletionCode(String email, String code) {
+    public void sendAccountDeletionCode(User user, String code) {
+        Context context = new Context();
+        context.setVariable("greetingName", getGreetingName(user));
+        context.setVariable("code", code);
+        context.setVariable("currentYear", Year.now().getValue());
+
+        String htmlContent = templateEngine.process("account-deletion-email", context);
+
         String subject = "URGENT: Account Deletion Security Code";
-
-        // Build the message body
-        String message = String.format(
-                """
-                        Hello,
-                        
-                        We received a request to permanently delete your account. \
-                        To confirm this action, please enter the following verification code in the app:
-                        
-                        --- %s ---
-                        
-                        This code will expire in 10 minutes.
-                        
-                        **WARNING:** Deleting your account will disable your access and begin the data removal process. \
-                        If you did not request this, please change your password immediately and ignore this email.""",
-                code
-        );
-
-        // Dispatch via your mail provider
-        sendHtmlEmail(email, subject, message);
+        sendHtmlEmail(user.getEmail(), subject, htmlContent);
     }
 
     @Async("emailExecutor")
     public void sendEmailChangeConfirmation(String newEmail, String token) {
-        // 1. Construct the confirmation URL pointing to your React Frontend
-        // Example: https://myapp.com/confirm-email-change?token=xyz
-        String confirmationUrl = frontendUrl + "/auth/confirm-email-change?token=" + token;
+        String confirmationUrl = frontendUrl + "/confirm-email?token=" + token;
+
+        Context context = new Context();
+        context.setVariable("newEmail", newEmail);
+        context.setVariable("confirmationUrl", confirmationUrl);
+        context.setVariable("currentYear", Year.now().getValue());
+
+        String htmlContent = templateEngine.process("email-change-confirmation", context);
 
         String subject = "Confirm your new email address";
+        sendHtmlEmail(newEmail, subject, htmlContent);
+    }
 
-        // 2. Build the message body
-        // PROD TIP: Use a template engine like Thymeleaf for HTML emails in the future
-        String message = String.format(
-                """
-                        Hello,
-                        
-                        You requested to change your account email to %s.
-                        
-                        To complete this process, please click the link below to verify this address:
-                        %s
-                        
-                        This link will expire in 2 hours.
-                        
-                        If you did not request this change, please ignore this email. Your current email remains secure.""",
-                newEmail, confirmationUrl
-        );
-
-        // 3. Dispatch via your mail provider
-        sendHtmlEmail(newEmail, subject, message);
+    private String getGreetingName(User user) {
+        if (user == null || user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
+            return "User";
+        }
+        String name = user.getFirstName().trim();
+        if (user.getLastName() != null && !user.getLastName().trim().isEmpty()) {
+            name += " " + user.getLastName().trim();
+        }
+        return name;
     }
 
     private void sendHtmlEmail(String to, String subject, String body) {
