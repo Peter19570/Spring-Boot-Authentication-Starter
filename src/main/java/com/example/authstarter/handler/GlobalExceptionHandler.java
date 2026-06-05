@@ -1,10 +1,10 @@
 package com.example.authstarter.handler;
 
-import com.example.authstarter.module.auth.exceptions.AlreadyExistException;
-import com.example.authstarter.module.auth.exceptions.AuthenticationException;
-import com.example.authstarter.module.auth.exceptions.NotFoundException;
-import com.example.authstarter.module.auth.exceptions.ValidationException;
-import com.example.authstarter.module.shared.dto.ApiResponse;
+import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
+import com.example.authstarter.features.auth.exceptions.AuthenticationException;
+import com.example.authstarter.features.auth.exceptions.NotFoundException;
+import com.example.authstarter.features.auth.exceptions.ValidationException;
+import com.example.authstarter.features.shared.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
