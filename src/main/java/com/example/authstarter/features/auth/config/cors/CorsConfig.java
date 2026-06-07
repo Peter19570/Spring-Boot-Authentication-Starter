@@ -1,5 +1,6 @@
 package com.example.authstarter.features.auth.config.cors;
 
+import com.example.authstarter.features.auth.constants.CorsConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,21 +13,13 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins}")
-    private List<String> allowedOrigins;
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(allowedOrigins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "X-Requested-With",
-                "ngrok-skip-browser-warning"));
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowedOrigins(CorsConstants.ALLOWED_ORIGINS);
+        config.setAllowedMethods(CorsConstants.ALLOWED_METHODS);
+        config.setAllowedHeaders(CorsConstants.ALLOWED_HEADERS);
+        config.setExposedHeaders(CorsConstants.ALLOWED_EXPOSED_HEADERS);
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
