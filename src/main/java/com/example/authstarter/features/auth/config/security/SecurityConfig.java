@@ -1,6 +1,7 @@
 package com.example.authstarter.features.auth.config.security;
 
 import com.example.authstarter.features.auth.config.jwt.JwtFilter;
+import com.example.authstarter.features.auth.constants.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -34,9 +35,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll() // for websockets
+                        .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
+                        .requestMatchers(SecurityConstants.SWAGGER_URLS).permitAll()
+                        .requestMatchers(SecurityConstants.WEBSOCKET_URLS).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
