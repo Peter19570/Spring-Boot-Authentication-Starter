@@ -29,4 +29,6 @@ public final class CorsConstants {
     );
 
     public static final List<String> ALLOWED_EXPOSED_HEADERS = List.of("Authorization");
+
+    public static final String PATTERN = "/**";
 }
