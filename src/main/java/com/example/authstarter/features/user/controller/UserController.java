@@ -23,7 +23,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserDetailsResponse>> getCurrentUser(
             @AuthenticationPrincipal CustomUserPrincipal principal){
         UserDetailsResponse response = userService.getCurrentUser(principal.user());
-        return ResponseEntity.ok(new ApiResponse<>("User Information", response));
+        return ResponseEntity.ok(new ApiResponse<>("Current User Information", response));
     }
 
     @PostMapping("/me/deletion-request")
