@@ -7,6 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.*;
 
+//    =========================================================================================
+//    THIS IS SUPER BASIC, SIMPLY HAVE A THIRD PARTY HANDLE THIS
+//    =========================================================================================
+
 @Service
 public class OtpService {
 
@@ -19,7 +23,8 @@ public class OtpService {
     @PostConstruct
     public void init() {
         // Clean up expired OTPs every minute
-        cleanupExecutor.scheduleAtFixedRate(this::cleanupExpiredOtps, 1, 1, TimeUnit.MINUTES);
+        cleanupExecutor.scheduleAtFixedRate(
+                this::cleanupExpiredOtps, 1, 1, TimeUnit.MINUTES);
     }
 
     public String generateOtp(String identifier) {

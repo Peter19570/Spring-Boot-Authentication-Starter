@@ -28,6 +28,7 @@ public class AuditService {
     public void handleAuditEvent(AuditRequest request) {
         AuditLog audit = AuditLog.builder()
                 .userId(request.user().getId())
+                .email(request.user().getEmail())
                 .fullName(request.user().getFirstName() + " " + request.user().getLastName())
                 .action(request.auditAction())
                 .metadata(request.metaData())
@@ -36,7 +37,6 @@ public class AuditService {
         auditRepo.save(audit);
     }
 
-    // Simple GET method to retrieve all audits in the database, advance later with filters
     public Page<AuditResponse> getAllAudits(Pageable pageable){
         Page<AuditLog> responses = auditRepo.findAll(pageable);
         return responses.map(auditMapper::toDto);

@@ -23,6 +23,9 @@ public class AuditLog extends BaseEntity {
     private UUID userId;
 
     @Column(nullable = false)
+    private String email;
+
+    @Column(nullable = false)
     private String fullName;
 
     @Enumerated(EnumType.STRING)
