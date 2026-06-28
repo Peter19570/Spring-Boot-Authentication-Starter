@@ -6,6 +6,7 @@ import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.service.AuthService;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +23,9 @@ import java.security.GeneralSecurityException;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication")
+@Tag(name = "Authentication", description = "Register, Login, Google " +
+        "Login (Firebase OAuth2), Logout, Refresh etc.."
+)
 public class AuthController {
 
     private final AuthService authService;
@@ -50,6 +53,8 @@ public class AuthController {
     }
 
     @PostMapping("/google")
+    @Operation(summary = "Accepts jwt token from google, " +
+            "validates it and then sends the server's custom token")
     public ResponseEntity<ApiResponse<AuthResponse>> google(
             @RequestBody @Valid GoogleRequest request)
             throws GeneralSecurityException, IOException {
@@ -60,11 +65,14 @@ public class AuthController {
 
     @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Revokes refresh token on logout," +
+            " Logout is still possible without the token though, " +
+            "i just log it if that happens")
     public ResponseEntity<ApiResponse<String>> logout(
             @Valid @RequestBody RefreshTokenRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        authService.logout(request, principal.user());
+        authService.logout(request, principal.id());
         return ResponseEntity.ok(new ApiResponse<>(
                 "Logout success", "You have successfully logged out of your account."));
     }
@@ -96,7 +104,7 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody @Valid EmailChangeRequest request) {
 
-        authService.requestEmailChange(principal.user(), request);
+        authService.requestEmailChange(principal.id(), request);
         return ResponseEntity.ok(new ApiResponse<>(
                 "Verification Required", "Please check your new inbox and click" +
                 " the secure activation link we just sent you."));

@@ -10,8 +10,8 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 
 @OpenAPIDefinition(
         info = @Info(
-                title = "Project Title",
-                description = "Project Description",
+                title = "Authentication Starter",
+                description = "Project Description...",
                 contact = @Contact(
                         name = "Peter Nwaogu",
                         email = "peternwaogu05@gmail.com"

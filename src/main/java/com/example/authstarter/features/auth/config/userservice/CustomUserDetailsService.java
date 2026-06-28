@@ -8,11 +8,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Configuration
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepo userRepo;
@@ -24,9 +26,4 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new CustomUserPrincipal(user);
     }
 
-    public CustomUserPrincipal loadUserById(String id){
-        User user = userRepo.findById(UUID.fromString(id)).orElseThrow(() ->
-                new UsernameNotFoundException("User not found"));
-        return new CustomUserPrincipal(user);
-    }
 }

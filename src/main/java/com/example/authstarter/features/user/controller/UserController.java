@@ -22,14 +22,14 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDetailsResponse>> getCurrentUser(
             @AuthenticationPrincipal CustomUserPrincipal principal){
-        UserDetailsResponse response = userService.getCurrentUser(principal.user());
+        UserDetailsResponse response = userService.getCurrentUser(principal.id());
         return ResponseEntity.ok(new ApiResponse<>("Current User Information", response));
     }
 
     @PostMapping("/me/deletion-request")
     public ResponseEntity<Void> requestDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal) {
-        userService.initiateDeletion(principal.user());
+        userService.initiateDeletion(principal.id());
         return ResponseEntity.ok().build();
     }
 
@@ -38,7 +38,7 @@ public class UserController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody AccountDeletionRequest request) {
         userService.confirmSoftDelete(
-                principal.user(),
+                principal.id(),
                 request.password(),
                 request.otp()
         );

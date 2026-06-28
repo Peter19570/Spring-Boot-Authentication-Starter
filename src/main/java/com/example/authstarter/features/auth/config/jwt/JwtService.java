@@ -38,17 +38,18 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
+        claims.put("email", principal.email());
         claims.put("roles", roles);
         claims.put("type", "access");
 
-        return createToken(claims, principal.user().getId().toString(), accessTokenExpiration.toMillis());
+        return createToken(claims, principal.id().toString(), accessTokenExpiration.toMillis());
     }
 
     public String generateRefreshToken(CustomUserPrincipal principal) {
         Map<String, Object> claims = new HashMap<>();
 
         claims.put("type", "refresh");
-        return createToken(claims, principal.user().getId().toString(), refreshTokenExpiration.toMillis());
+        return createToken(claims, principal.id().toString(), refreshTokenExpiration.toMillis());
     }
 
     public boolean isTokenValid(String token, String expectedUserId) {
@@ -58,6 +59,14 @@ public class JwtService {
 
     public String extractUserId(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractUserEmail(String token){
+        return extractClaim(token, claims -> claims.get("email", String.class));
+    }
+
+    public List<String> extractUserRoles(String token){
+        return extractClaim(token, claims -> claims.get("roles", List.class));
     }
 
     public String extractTokenType(String token){

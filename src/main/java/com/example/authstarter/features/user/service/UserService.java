@@ -2,6 +2,7 @@ package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
+import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -37,6 +39,13 @@ public class UserService {
     private final EmailVerificationTokenRepo emailVerificationTokenRepo;
     private final PasswordResetTokenRepo passwordResetTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
+
+    // U can have redis cache this so same user is looked up instantly after the principal is filled
+    @Transactional(readOnly = true)
+    public User fetchUser(UUID id){
+        return userRepo.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
 
     public User syncUser(GoogleIdToken.Payload payload){
         User existingUser =  userRepo.findByEmail(payload.getEmail()).orElseGet(() -> {
@@ -72,16 +81,20 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetailsResponse getCurrentUser(User currentUser){
+    public UserDetailsResponse getCurrentUser(UUID currentUserId){
+        User currentUser = fetchUser(currentUserId);
         return userMapper.toDetailsDto(currentUser);
     }
 
-    public void initiateDeletion(User currentUser) {
+    public void initiateDeletion(UUID currentUserId) {
+        User currentUser = fetchUser(currentUserId);
         String code = otpService.generateOtp(currentUser.getEmail());
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    public void confirmSoftDelete(User currentUser, String password, String otp) {
+    public void confirmSoftDelete(UUID currentUserId, String password, String otp) {
+        User currentUser = fetchUser(currentUserId);
+
         if (currentUser.getPassword() != null) {
             if (!passwordEncoder.matches(password, currentUser.getPassword())) {
                 throw new BadCredentialsException("Invalid password provided for account deletion.");

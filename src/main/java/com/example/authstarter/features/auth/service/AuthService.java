@@ -80,13 +80,15 @@ public class AuthService {
 
         User user = authMapper.toEntityFromAuth(request);
         user.setPassword(passwordEncoder.encode(request.password()));
-        CustomUserPrincipal principal = new CustomUserPrincipal(userRepo.save(user));
-        eventPublisher.publishEvent(principal.user());
+        User newUser = userRepo.save(user);
 
-        eventPublisher.publishEvent(new AuditRequest(principal.user(), AuditAction.REGISTER,
+        // I got a register subscriber listening for this event/entity to send email
+        eventPublisher.publishEvent(newUser);
+
+        eventPublisher.publishEvent(new AuditRequest(newUser, AuditAction.REGISTER,
                 Map.of("message", "New user created")));
 
-        return createAuthResponse(jwtService, principal);
+        return createAuthResponse(jwtService, newUser);
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -125,7 +127,7 @@ public class AuthService {
             eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN,
                     Map.of("message", "User logged in successfully")));
 
-            return createAuthResponse(jwtService, principal);
+            return createAuthResponse(jwtService, user);
 
         } catch (BadCredentialsException e) {
             int newAttempts = user.getFailedLoginAttempts() + 1;
@@ -166,15 +168,30 @@ public class AuthService {
         return createTokenResponse(jwtService, user);
     }
 
-    public void logout(RefreshTokenRequest request, User user) {
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGOUT,
-                Map.of("message", "User logout success")));
+    public void logout(RefreshTokenRequest request, UUID userId) {
+        User user = userService.fetchUser(userId);
 
-        refreshTokenRepo.findByTokenHash(request.refreshToken())
-                .ifPresent(token -> {
+        boolean revoked = refreshTokenRepo.findByTokenHash(request.refreshToken())
+                .map(token -> {
                     token.setRevoked(true);
                     refreshTokenRepo.save(token);
-                });
+                    return true;
+                })
+                .orElse(false);
+
+        if (revoked) {
+            eventPublisher.publishEvent(new AuditRequest(
+                    user,
+                    AuditAction.LOGOUT,
+                    Map.of("message", "User logout success")
+            ));
+        } else {
+            eventPublisher.publishEvent(new AuditRequest(
+                    user,
+                    AuditAction.LOGOUT,
+                    Map.of("message", "Logout attempted but token not found")
+            ));
+        }
     }
 
     public AuthResponse googleLogin(GoogleRequest request) throws GeneralSecurityException, IOException {
@@ -183,9 +200,9 @@ public class AuthService {
         if (idToken == null){throw new ValidationException("Google token is invalid");}
 
         GoogleIdToken.Payload payload = idToken.getPayload();
-        CustomUserPrincipal principal = new CustomUserPrincipal(userService.syncUser(payload));
+        User user = userService.syncUser(payload);
 
-        return createAuthResponse(jwtService, principal);
+        return createAuthResponse(jwtService, user);
     }
 
 //    =========================================================================================
@@ -210,7 +227,9 @@ public class AuthService {
                 Map.of("message", "Email verified successfully")));
     }
 
-    public void requestEmailChange(User user, EmailChangeRequest request) {
+    public void requestEmailChange(UUID userId, EmailChangeRequest request) {
+        User user = userService.fetchUser(userId);
+
         if (user.getPassword() == null) {
             throw new ValidationException("Cannot reset email with empty password");
         }
@@ -311,11 +330,11 @@ public class AuthService {
 //    PRIVATE HELPER METHODS HERE
 //    =========================================================================================
 
-    private AuthResponse createAuthResponse(JwtService jwtService, CustomUserPrincipal principal){
+    private AuthResponse createAuthResponse(JwtService jwtService, User user){
         return new AuthResponse(
                 true,
-                createTokenResponse(jwtService, principal.user()),
-                userMapper.toDto(principal.user())
+                createTokenResponse(jwtService, user),
+                userMapper.toDto(user)
         );
     }
 
@@ -327,7 +346,7 @@ public class AuthService {
         long accessExpiration = jwtService.getAccessExpirationInSeconds();
 
         RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(principal.user());
+        refreshToken.setUser(user);
         refreshToken.setTokenHash(refresh);
         refreshToken.setExpiresAt(Instant.now().plusSeconds(60 * 60 * 24 * 7));
         refreshTokenRepo.save(refreshToken);
