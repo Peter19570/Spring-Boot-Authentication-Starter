@@ -23,8 +23,9 @@ import java.security.GeneralSecurityException;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Register, Login, Google " +
-        "Login (Firebase OAuth2), Logout, Refresh etc.."
+@Tag(
+        name = "Authentication",
+        description = "Register, Login, Google-Login (Firebase OAuth2), Logout, Refresh etc..."
 )
 public class AuthController {
 
@@ -35,6 +36,7 @@ public class AuthController {
 //    =========================================================================================
 
     @PostMapping("/register")
+    @Operation(summary = "User is sent email on registration for email verification")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody AuthRequest request
     ) {
