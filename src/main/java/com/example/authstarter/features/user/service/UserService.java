@@ -72,6 +72,9 @@ public class UserService {
             }
 
             userRepo.save(existingUser);
+
+            eventPublisher.publishEvent(new AuditRequest(existingUser, AuditAction.SOCIAL_LINK,
+                    Map.of("message", "Google account linked successfully")));
         }
 
         eventPublisher.publishEvent(new AuditRequest(existingUser, AuditAction.LOGIN,
