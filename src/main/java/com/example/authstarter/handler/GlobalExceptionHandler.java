@@ -19,17 +19,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleServerException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>(
-                        "Internal Server Error",
+                .body(ApiResponse.error("Internal Server Error",
                         "Error caught: " + ex.getClass().getSimpleName()
-                                + " Error Info: " + ex.getMessage()));
+                                + "-- Error Info: " + ex.getMessage()));
     }
 
     @ExceptionHandler(AlreadyExistException.class)
     public ResponseEntity<ApiResponse<String>> handleConflictException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(new ApiResponse<>("Conflict", ex.getMessage()));
+                .body(ApiResponse.error("Conflict", ex.getMessage()));
     }
 
     @ExceptionHandler({
@@ -40,7 +39,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleUnauthorizedException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(new ApiResponse<>("Unauthorized", ex.getMessage()));
+                .body(ApiResponse.error("Unauthorized", ex.getMessage()));
     }
 
     @ExceptionHandler({
@@ -51,6 +50,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleBadException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>("Bad Request", ex.getMessage()));
+                .body(ApiResponse.error("Bad Request", ex.getMessage()));
     }
 }

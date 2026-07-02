@@ -28,6 +28,6 @@ public class AuditController {
             @RequestParam(defaultValue = "0") int page){
         Pageable pageable = PageRequest.of(page, 50, Sort.by("createdAt").descending());
         Page<AuditResponse> responses = auditService.getAllAudits(pageable);
-        return ResponseEntity.ok(new ApiResponse<>("All Audit Logs", responses));
+        return ResponseEntity.ok(ApiResponse.success("All Audit Logs", responses));
     }
 }
