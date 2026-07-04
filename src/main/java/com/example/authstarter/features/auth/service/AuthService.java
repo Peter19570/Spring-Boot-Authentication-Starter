@@ -200,7 +200,7 @@ public class AuthService {
         if (idToken == null){throw new ValidationException("Google token is invalid");}
 
         GoogleIdToken.Payload payload = idToken.getPayload();
-        User user = userService.syncUser(payload);
+        User user = userService.syncGoogleWithLocal(payload);
 
         return createAuthResponse(jwtService, user);
     }

@@ -47,7 +47,7 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public User syncUser(GoogleIdToken.Payload payload){
+    public User syncGoogleWithLocal(GoogleIdToken.Payload payload){
         User existingUser =  userRepo.findByEmail(payload.getEmail()).orElseGet(() -> {
             User user = userMapper.toEntityFromGoogle(payload);
 
