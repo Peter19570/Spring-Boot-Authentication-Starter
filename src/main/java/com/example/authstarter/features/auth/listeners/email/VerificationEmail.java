@@ -18,13 +18,13 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class RegisterEmail {
+public class VerificationEmail {
 
     private final EmailService emailService;
     private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @EventListener
-    public void onUserRegistration(User user){
+    public void onSendVerificationEmail(User user){
         String rawToken = UUID.randomUUID().toString();
         emailService.sendVerificationEmail(user, rawToken);
 

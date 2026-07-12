@@ -227,6 +227,11 @@ public class AuthService {
                 Map.of("message", "Email verified successfully")));
     }
 
+    public void resendVerificationEmail(CustomUserPrincipal principal){
+        User user = userService.fetchUser(principal.id());
+        eventPublisher.publishEvent(user);
+    }
+
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
         User user = userService.fetchUser(userId);
 
