@@ -9,8 +9,6 @@ public final class CorsConstants {
     // yeah, I think this should go into the .env
     public static final List<String> ALLOWED_ORIGINS = List.of("http://localhost:3000");
 
-//    public static final List<String> ALLOWED_ORIGINS = List.of("*");
-
     public static final List<String> ALLOWED_METHODS = List.of(
             "GET",
             "POST",
