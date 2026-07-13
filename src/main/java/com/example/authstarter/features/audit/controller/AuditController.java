@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/audits")
 @RequiredArgsConstructor
-@Tag(name = "Audit-Logging")
+@Tag(name = "Audit-Logging", description = "Light auditing in place to keep track of activities happening")
 public class AuditController {
 
     private final AuditService auditService;
