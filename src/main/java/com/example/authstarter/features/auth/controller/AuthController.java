@@ -96,17 +96,19 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> verifyEmail(
             @RequestParam @NotNull(message = "Token is required") String token) {
         authService.verifyEmail(token);
-        return ResponseEntity.ok(new ApiResponse<>(
+        return ResponseEntity.ok(ApiResponse.success(
                 "Verification Complete",
                 "Identity verification successful."));
     }
 
     @GetMapping("/resend-verification-email")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> resendVerificationEmail(
+    public ResponseEntity<ApiResponse<String>> resendVerificationEmail(
             @AuthenticationPrincipal CustomUserPrincipal principal){
         authService.resendVerificationEmail(principal);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.success(
+                "Verification Email Resent",
+                "Kindly check your inbox for the new verification link that has been sent"));
     }
 
     @PostMapping("/change-email")
