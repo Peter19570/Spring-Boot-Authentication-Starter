@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
                         .requestMatchers(SecurityConstants.SWAGGER_URLS).permitAll()
                         .requestMatchers(SecurityConstants.WEBSOCKET_URLS).permitAll()
+                        .requestMatchers(SecurityConstants.ACTUATOR_URLS).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
