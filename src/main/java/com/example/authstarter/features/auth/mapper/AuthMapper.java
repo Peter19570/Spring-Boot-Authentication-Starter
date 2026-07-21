@@ -12,5 +12,7 @@ public interface AuthMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "provider", constant = "LOCAL")
-    User toEntityFromAuth(AuthRequest request);
+    @Mapping(target = "firstName", source = "firstName")
+    @Mapping(target = "lastName", source = "lastName")
+    User toEntityFromAuth(AuthRequest request, String firstName, String lastName);
 }

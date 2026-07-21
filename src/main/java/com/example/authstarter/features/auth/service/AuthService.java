@@ -74,11 +74,30 @@ public class AuthService {
 //    =========================================================================================
 
     public AuthResponse register(AuthRequest request) {
+        String email = request.email();
+        int atIndex = email.indexOf("@");
+
+        String firstName = "not-set";
+        String lastName = "not-set";
+
+        if (atIndex > 0){
+            String tempName = email.substring(0, atIndex);
+
+            int dotIndex = tempName.indexOf(".");
+            if (dotIndex > 0 && dotIndex < tempName.length() - 1){
+                firstName = tempName.substring(0, dotIndex);
+                lastName = tempName.substring(dotIndex + 1, atIndex);
+
+            } else {
+                firstName = tempName;
+            }
+        }
+
         if (userRepo.existsByEmail(request.email())) {
             throw new AlreadyExistException("Email already registered");
         }
 
-        User user = authMapper.toEntityFromAuth(request);
+        User user = authMapper.toEntityFromAuth(request, firstName, lastName);
         user.setPassword(passwordEncoder.encode(request.password()));
         User newUser = userRepo.save(user);
 
