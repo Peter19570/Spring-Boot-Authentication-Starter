@@ -1,13 +1,17 @@
 package com.example.authstarter.features.auth.constants;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.List;
 
 public final class CorsConstants {
 
     private CorsConstants() {}
 
-    // yeah, I think this should go into the .env
-    public static final List<String> ALLOWED_ORIGINS = List.of("http://localhost:3000");
+    @Value("${app.cors.allowed-origins}")
+    private static List<String> allowedOrigins;
+
+    public static final List<String> ALLOWED_ORIGINS = allowedOrigins;
 
     public static final List<String> ALLOWED_METHODS = List.of(
             "GET",
