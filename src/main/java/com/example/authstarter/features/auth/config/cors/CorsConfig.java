@@ -13,10 +13,13 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    @Value("${app.cors.allowed-origins}")
+    private static List<String> allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(CorsConstants.ALLOWED_ORIGINS);
+        config.setAllowedOriginPatterns(allowedOrigins);
         config.setAllowedMethods(CorsConstants.ALLOWED_METHODS);
         config.setAllowedHeaders(CorsConstants.ALLOWED_HEADERS);
         config.setExposedHeaders(CorsConstants.ALLOWED_EXPOSED_HEADERS);
