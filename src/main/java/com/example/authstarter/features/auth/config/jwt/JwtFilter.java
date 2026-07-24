@@ -45,6 +45,11 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (request.getMethod().equals("OPTIONS")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             UUID userId = UUID.fromString(jwtService.extractUserId(jwt));
             String email = jwtService.extractUserEmail(jwt); // this is low-key not useful (at least to me)
