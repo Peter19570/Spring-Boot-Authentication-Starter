@@ -4,6 +4,7 @@ import com.example.authstarter.features.auth.config.jwt.JwtFilter;
 import com.example.authstarter.features.auth.constants.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,12 +20,23 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+
+    @Value("${spring.application.name}")
+    private final String applicationName;
+
+    @Value("${app.frontend.url}")
+    private final String frontendUrl;
+
+    @Value("${app.frontend.id}")
+    private final String frontendId;
 
     @Bean
     public SecurityFilterChain filterChain(
@@ -42,6 +54,12 @@ public class SecurityConfig {
                         .requestMatchers(SecurityConstants.WEBSOCKET_URLS).permitAll()
                         .requestMatchers(SecurityConstants.ACTUATOR_URLS).permitAll()
                         .anyRequest().authenticated())
+                // Will come back to the passkeys later (when I get better understanding)
+//                .webAuthn(webAuth -> webAuth
+//                        .rpName(applicationName)
+//                        .rpId(frontendId)
+//                        .allowedOrigins(frontendUrl)
+//                        .disableDefaultRegistrationPage(true))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
