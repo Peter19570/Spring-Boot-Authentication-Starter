@@ -18,9 +18,19 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
+import org.springframework.security.web.webauthn.authentication.HttpSessionPublicKeyCredentialRequestOptionsRepository;
+import org.springframework.security.web.webauthn.authentication.PublicKeyCredentialRequestOptionsRepository;
+import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
+import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
+import org.springframework.security.web.webauthn.management.Webauthn4JRelyingPartyOperations;
+import org.springframework.security.web.webauthn.registration.HttpSessionPublicKeyCredentialCreationOptionsRepository;
+import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
@@ -28,15 +38,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
-
-    @Value("${spring.application.name}")
-    private final String applicationName;
-
-    @Value("${app.frontend.url}")
-    private final String frontendUrl;
-
-    @Value("${app.frontend.id}")
-    private final String frontendId;
 
     @Bean
     public SecurityFilterChain filterChain(
@@ -54,12 +55,6 @@ public class SecurityConfig {
                         .requestMatchers(SecurityConstants.WEBSOCKET_URLS).permitAll()
                         .requestMatchers(SecurityConstants.ACTUATOR_URLS).permitAll()
                         .anyRequest().authenticated())
-                // Will come back to the passkeys later (when I get better understanding)
-//                .webAuthn(webAuth -> webAuth
-//                        .rpName(applicationName)
-//                        .rpId(frontendId)
-//                        .allowedOrigins(frontendUrl)
-//                        .disableDefaultRegistrationPage(true))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -74,5 +69,6 @@ public class SecurityConfig {
             AuthenticationConfiguration configuration) throws Exception{
         return configuration.getAuthenticationManager();
     }
+
 }
 

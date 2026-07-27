@@ -7,6 +7,7 @@ import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,7 +20,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleServerException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal Server Error",
+                .body(ApiResponse.error("Internal Server Error (500)",
                         "Error caught: " + ex.getClass().getSimpleName()
                                 + "-- Error Info: " + ex.getMessage()));
     }
@@ -28,18 +29,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleConflictException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error("Conflict", ex.getMessage()));
+                .body(ApiResponse.error("Conflict (409)", ex.getMessage()));
     }
 
     @ExceptionHandler({
             BadCredentialsException.class,
             UsernameNotFoundException.class,
-            IllegalStateException.class
+            IllegalStateException.class,
+            AccessDeniedException.class,
+            IllegalArgumentException.class
     })
     public ResponseEntity<ApiResponse<String>> handleUnauthorizedException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Unauthorized", ex.getMessage()));
+                .body(ApiResponse.error("Unauthorized (401)", ex.getMessage()));
     }
 
     @ExceptionHandler({
@@ -50,6 +53,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<String>> handleBadException(Exception ex){
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Bad Request", ex.getMessage()));
+                .body(ApiResponse.error("Bad Request (400)", ex.getMessage()));
     }
 }

@@ -5,6 +5,7 @@ import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
+import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
@@ -17,34 +18,40 @@ import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
+import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
-import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.example.authstarter.features.user.service.UserService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.webauthn.api.*;
+import org.springframework.security.web.webauthn.authentication.PublicKeyCredentialRequestOptionsRepository;
+import org.springframework.security.web.webauthn.management.*;
+import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
+
+import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 
 @Service
 @RequiredArgsConstructor
@@ -60,14 +67,18 @@ public class AuthService {
     private final EmailService emailService;
     private final JwtService jwtService;
 
-    private final UserMapper userMapper;
     private final AuthMapper authMapper;
+    private final AuthHelper authHelper;
 
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final GoogleIdTokenVerifier verifier;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final WebAuthnRelyingPartyOperations relyingPartyOperations;
+    private final PublicKeyCredentialCreationOptionsRepository optionsRepository;
+
+    private final PublicKeyCredentialRequestOptionsRepository requestOptionsRepository;
 
 //    =========================================================================================
 //    MAJOR AUTHENTICATION METHODS HERE
@@ -107,7 +118,7 @@ public class AuthService {
         eventPublisher.publishEvent(new AuditRequest(newUser, AuditAction.REGISTER,
                 Map.of("message", "New user created")));
 
-        return createAuthResponse(jwtService, newUser);
+        return authHelper.createAuthResponse(jwtService, newUser);
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -146,7 +157,7 @@ public class AuthService {
             eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN,
                     Map.of("message", "User logged in successfully")));
 
-            return createAuthResponse(jwtService, user);
+            return authHelper.createAuthResponse(jwtService, user);
 
         } catch (BadCredentialsException e) {
             int newAttempts = user.getFailedLoginAttempts() + 1;
@@ -184,7 +195,7 @@ public class AuthService {
         storedToken.setRevoked(true);
         refreshTokenRepo.save(storedToken);
 
-        return createTokenResponse(jwtService, user);
+        return authHelper.createTokenResponse(jwtService, user);
     }
 
     public void logout(RefreshTokenRequest request, UUID userId) {
@@ -213,7 +224,8 @@ public class AuthService {
         }
     }
 
-    public AuthResponse googleLogin(GoogleRequest request) throws GeneralSecurityException, IOException {
+    public AuthResponse googleLogin(GoogleRequest request)
+            throws GeneralSecurityException, IOException {
         GoogleIdToken idToken = verifier.verify(request.idToken());
 
         if (idToken == null){throw new ValidationException("Google token is invalid");}
@@ -221,7 +233,82 @@ public class AuthService {
         GoogleIdToken.Payload payload = idToken.getPayload();
         User user = userService.syncGoogleWithLocal(payload);
 
-        return createAuthResponse(jwtService, user);
+        return authHelper.createAuthResponse(jwtService, user);
+    }
+
+//    =========================================================================================
+//    PASSKEY AUTHENTICATION METHODS HERE
+//    =========================================================================================
+
+    public PasskeyOptionsResponse startPasskeyRegistration(
+            HttpServletRequest request, HttpServletResponse response) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        assert authentication != null;
+        var optionsRequest = new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication);
+
+        PublicKeyCredentialCreationOptions options =
+                relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
+
+        optionsRepository.save(request, response, options);
+        return PasskeyOptionsResponse.toResponse(options);
+    }
+
+    public CredentialRecord finishPasskeyRegistration(
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
+            PasskeyRegistrationRequest request, CustomUserPrincipal principal) {
+
+        PublicKeyCredentialCreationOptions options = optionsRepository.load(servletRequest);
+        RelyingPartyPublicKey publicKey = new RelyingPartyPublicKey(request.credential(), request.label());
+
+        assert options != null;
+        var registrationRequest = new ImmutableRelyingPartyRegistrationRequest(options, publicKey);
+
+        CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
+
+        User existingUser = userService.fetchUser(principal.id());
+        String provider = existingUser.getProvider();
+
+        if (provider == null) {
+            existingUser.setProvider("PASSKEY");
+        } else if (!provider.contains("PASSKEY")) {
+            existingUser.setProvider(provider + ",PASSKEY");
+        }
+
+        optionsRepository.save(servletRequest, servletResponse, null);
+        return record;
+    }
+
+    public PublicKeyCredentialRequestOptions startPasskeyAuthentication(
+            HttpServletRequest request, HttpServletResponse response) {
+
+        var optionsRequest = new ImmutablePublicKeyCredentialRequestOptionsRequest(null);
+
+        PublicKeyCredentialRequestOptions options =
+                relyingPartyOperations.createCredentialRequestOptions(optionsRequest);
+
+        requestOptionsRepository.save(request, response, options);
+        return options;
+    }
+
+    public AuthResponse finishPasskeyAuthentication(
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
+            PasskeyLoginRequest request) {
+
+        PublicKeyCredentialRequestOptions options = requestOptionsRepository.load(servletRequest);
+
+        assert options != null;
+        var authenticationRequest = new RelyingPartyAuthenticationRequest(options, request.credential());
+
+        PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
+        UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
+
+        User user = userService.fetchUser(userId);
+
+        requestOptionsRepository.save(servletRequest, servletResponse, null);
+
+        return authHelper.createAuthResponse(jwtService, user);
     }
 
 //    =========================================================================================
@@ -356,41 +443,4 @@ public class AuthService {
                 Map.of("message", "User reset password successfully")));
     }
 
-//    =========================================================================================
-//    PRIVATE HELPER METHODS HERE
-//    =========================================================================================
-
-    private AuthResponse createAuthResponse(JwtService jwtService, User user){
-        return new AuthResponse(
-                true,
-                createTokenResponse(jwtService, user),
-                userMapper.toDto(user)
-        );
-    }
-
-    private TokenResponse createTokenResponse(JwtService jwtService, User user){
-        CustomUserPrincipal principal = new CustomUserPrincipal(user);
-
-        String access = jwtService.generateAccessToken(principal);
-        String refresh = jwtService.generateRefreshToken(principal);
-        long accessExpiration = jwtService.getAccessExpirationInSeconds();
-
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(user);
-        refreshToken.setTokenHash(refresh);
-        refreshToken.setExpiresAt(Instant.now().plusSeconds(60 * 60 * 24 * 7));
-        refreshTokenRepo.save(refreshToken);
-
-        return new TokenResponse(access, refresh, accessExpiration);
-    }
-
-    private String hashToken(String rawToken) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256")
-                    .digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Hashing failed", e);
-        }
-    }
 }

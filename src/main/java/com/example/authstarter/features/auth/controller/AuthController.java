@@ -2,12 +2,15 @@ package com.example.authstarter.features.auth.controller;
 
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
+import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.service.AuthService;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.web.webauthn.api.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -130,6 +134,51 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(
                 "Email Address Updated",
                 "Your primary email address has been successfully changed."));
+    }
+
+//    =========================================================================================
+//    PASSKEY RELATED METHODS HERE
+//    =========================================================================================
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/passkeys/initialize")
+    public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> startPasskeyRegistration(
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse){
+        PasskeyOptionsResponse response = authService.startPasskeyRegistration(
+                servletRequest, servletResponse);
+        return ResponseEntity.ok(ApiResponse.success("Passkey Registration Initiated", response));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/passkeys/complete")
+    public ResponseEntity<ApiResponse<CredentialRecord>> finishPasskeyRegistration(
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse,
+            @RequestBody PasskeyRegistrationRequest request,
+            @AuthenticationPrincipal CustomUserPrincipal principal){
+        CredentialRecord response = authService.finishPasskeyRegistration(
+                servletRequest, servletResponse, request, principal);
+        return ResponseEntity.ok(ApiResponse.success("Public Key Saved", response));
+    }
+
+    @PostMapping("/passkeys/challenge")
+    public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication(
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse){
+        PublicKeyCredentialRequestOptions response = authService.startPasskeyAuthentication(
+                servletRequest, servletResponse);
+        return ResponseEntity.ok(ApiResponse.success("Passkey Challenge Sent Successfully", response));
+    }
+
+    @PostMapping("/passkeys/verify")
+    public ResponseEntity<ApiResponse<AuthResponse>> finishPasskeyAuthentication(
+            HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse,
+            @RequestBody PasskeyLoginRequest request){
+        AuthResponse response = authService.finishPasskeyAuthentication(
+                servletRequest, servletResponse, request);
+        return ResponseEntity.ok(ApiResponse.success("Passkey Login Success", response));
     }
 
 //    =========================================================================================
