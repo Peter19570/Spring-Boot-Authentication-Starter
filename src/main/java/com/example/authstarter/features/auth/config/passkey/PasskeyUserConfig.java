@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class PasskeyUserEntityConfig implements PublicKeyCredentialUserEntityRepository {
+public class PasskeyUserConfig implements PublicKeyCredentialUserEntityRepository {
 
     private final UserRepo userRepo;
 

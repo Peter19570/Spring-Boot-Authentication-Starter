@@ -37,7 +37,7 @@ example/
     │   │   │   │   └── GoogleConfig.java
     │   │   │   ├── passkey
     │   │   │   │   ├── PasskeyConfig.java
-    │   │   │   │   ├── PasskeyUserEntityConfig.java
+    │   │   │   │   ├── PasskeyUserConfig.java
     │   │   │   │   └── WebAuthnConfig.java
     │   │   │   ├── ratelimit
     │   │   │   │   └── RateLimitFilter.java
