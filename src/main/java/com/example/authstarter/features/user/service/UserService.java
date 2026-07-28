@@ -2,11 +2,14 @@ package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
+import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
+import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
+import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.auth.service.notification.OtpService;
 import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
@@ -15,6 +18,7 @@ import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,54 +37,19 @@ public class UserService {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
     private final OtpService otpService;
+    private final PasskeyRepo passkeyRepo;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
-    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
-    private final PasswordResetTokenRepo passwordResetTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final PasswordResetTokenRepo passwordResetTokenRepo;
+    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
-    // U can have redis cache this so same user is looked up instantly after the principal is filled
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "all-users", key = "#id")
     public User fetchUser(UUID id){
         return userRepo.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-    }
-
-    public User syncGoogleWithLocal(GoogleIdToken.Payload payload){
-        User existingUser =  userRepo.findByEmail(payload.getEmail()).orElseGet(() -> {
-            User user = userMapper.toEntityFromGoogle(payload);
-
-            eventPublisher.publishEvent(new AuditRequest(user, AuditAction.REGISTER,
-                    Map.of("message", "User created account with Google login")));
-
-            return userRepo.save(user);
-        });
-
-        if (existingUser.getFirstName() == null){
-            existingUser.setFirstName(payload.get("given_name").toString());
-            existingUser.setLastName(payload.get("family_name").toString());
-            existingUser.setPicture(payload.get("picture").toString());
-            existingUser.setEmailVerified(true);
-
-            String provider = existingUser.getProvider();
-
-            if (provider == null) {
-                existingUser.setProvider("GOOGLE");
-            } else if (!provider.contains("GOOGLE")) {
-                existingUser.setProvider(provider + ",GOOGLE");
-            }
-
-            userRepo.save(existingUser);
-
-            eventPublisher.publishEvent(new AuditRequest(existingUser, AuditAction.SOCIAL_LINK,
-                    Map.of("message", "Google account linked successfully")));
-        }
-
-        eventPublisher.publishEvent(new AuditRequest(existingUser, AuditAction.LOGIN,
-                Map.of("message", "Google login success")));
-
-        return existingUser;
     }
 
     @Transactional(readOnly = true)
@@ -112,7 +81,7 @@ public class UserService {
         refreshTokenRepo.deleteByUserId(currentUser.getId());
         passwordResetTokenRepo.deleteByUserId(currentUser.getId());
         emailVerificationTokenRepo.deleteByUserId(currentUser.getId());
-        userRepo.save(currentUser);
+        passkeyRepo.deleteAllByUserId(currentUser.getId());
 
         eventPublisher.publishEvent(new AuditRequest(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
                 Map.of("message", "User has been soft deleted")));

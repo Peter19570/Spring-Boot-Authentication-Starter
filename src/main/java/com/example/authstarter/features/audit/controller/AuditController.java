@@ -3,9 +3,10 @@ package com.example.authstarter.features.audit.controller;
 import com.example.authstarter.features.audit.dto.AuditResponse;
 import com.example.authstarter.features.audit.service.AuditService;
 import com.example.authstarter.features.shared.dto.ApiResponse;
+import com.example.authstarter.features.shared.dto.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,10 +25,12 @@ public class AuditController {
     private final AuditService auditService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AuditResponse>>> getAllAudits(
-            @RequestParam(defaultValue = "0") int page){
+    @Operation(summary = "Retrieve audit records.")
+    public ResponseEntity<ApiResponse<PageResponse<AuditResponse>>> getAllAudits(
+            @RequestParam(defaultValue = "0") int page
+    ){
         Pageable pageable = PageRequest.of(page, 50, Sort.by("createdAt").descending());
-        Page<AuditResponse> responses = auditService.getAllAudits(pageable);
+        PageResponse<AuditResponse> responses = auditService.getAllAudits(pageable);
         return ResponseEntity.ok(ApiResponse.success("All Audit Logs", responses));
     }
 }

@@ -2,8 +2,9 @@ package com.example.authstarter.features.audit.enums;
 
 public enum AuditAction {
     REGISTER,
-    LOGIN,
+    LOCAL_LOGIN,
     OAUTH_LOGIN,
+    PASSKEY_LOGIN,
     LOGIN_FAILURE,
     LOGIN_ATTEMPT,
     LOGOUT,
@@ -15,5 +16,6 @@ public enum AuditAction {
     ACCOUNT_SOFT_DELETED,
     ACCOUNT_HARD_DELETED,
     SOCIAL_LINK,
-    SOCIAL_UNLINK
+    SOCIAL_UNLINK,
+    PASSKEY_LINK
 }

@@ -5,6 +5,7 @@ import com.example.authstarter.features.audit.dto.AuditResponse;
 import com.example.authstarter.features.audit.mapper.AuditMapper;
 import com.example.authstarter.features.audit.model.AuditLog;
 import com.example.authstarter.features.audit.repo.AuditRepo;
+import com.example.authstarter.features.shared.dto.PageResponse;
 import com.example.authstarter.features.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -37,9 +38,9 @@ public class AuditService {
         auditRepo.save(audit);
     }
 
-    public Page<AuditResponse> getAllAudits(Pageable pageable){
+    public PageResponse<AuditResponse> getAllAudits(Pageable pageable){
         Page<AuditLog> responses = auditRepo.findAll(pageable);
-        return responses.map(auditMapper::toDto);
+        return PageResponse.from(responses.map(auditMapper::toDto));
     }
 
     private String getUserFullName(User user){

@@ -5,6 +5,7 @@ import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
+import com.example.authstarter.features.auth.dto.response.NameParts;
 import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
@@ -16,6 +17,7 @@ import com.example.authstarter.features.auth.model.EmailVerificationToken;
 import com.example.authstarter.features.auth.model.PasswordResetToken;
 import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
+import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
@@ -29,6 +31,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -59,120 +63,65 @@ import static com.example.authstarter.features.auth.service.helpers.AuthHelper.h
 public class AuthService {
 
     private final UserRepo userRepo;
-    private final RefreshTokenRepo refreshTokenRepo;
-    private final PasswordResetTokenRepo passwordResetTokenRepo;
-    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
-
-    private final UserService userService;
-    private final EmailService emailService;
     private final JwtService jwtService;
-
     private final AuthMapper authMapper;
     private final AuthHelper authHelper;
-
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
+    private final PasskeyRepo passkeyRepo;
+    private final UserService userService;
+    private final EmailService emailService;
     private final GoogleIdTokenVerifier verifier;
-
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuthenticationManager authenticationManager;
+    private final PasswordResetTokenRepo passwordResetTokenRepo;
+    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
     private final WebAuthnRelyingPartyOperations relyingPartyOperations;
-    private final PublicKeyCredentialCreationOptionsRepository optionsRepository;
-
     private final PublicKeyCredentialRequestOptionsRepository requestOptionsRepository;
+    private final PublicKeyCredentialCreationOptionsRepository creationOptionsRepository;
 
-//    =========================================================================================
-//    MAJOR AUTHENTICATION METHODS HERE
-//    =========================================================================================
+    /**
+     * MAJOR AUTHENTICATION METHODS HERE
+     */
 
+    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
-        int atIndex = email.indexOf("@");
-
-        String firstName = "not-set";
-        String lastName = "not-set";
-
-        if (atIndex > 0){
-            String tempName = email.substring(0, atIndex);
-
-            int dotIndex = tempName.indexOf(".");
-            if (dotIndex > 0 && dotIndex < tempName.length() - 1){
-                firstName = tempName.substring(0, dotIndex);
-                lastName = tempName.substring(dotIndex + 1, atIndex);
-
-            } else {
-                firstName = tempName;
-            }
-        }
+        NameParts names = authHelper.handleUsernameFromEmail(email);
 
         if (userRepo.existsByEmail(request.email())) {
             throw new AlreadyExistException("Email already registered");
         }
 
-        User user = authMapper.toEntityFromAuth(request, firstName, lastName);
+        User user = authMapper.toEntityFromAuth(request, names.firstName(), names.lastName());
         user.setPassword(passwordEncoder.encode(request.password()));
         User newUser = userRepo.save(user);
 
-        // I got a register subscriber listening for this event/entity to send email
+        // Listener will send email to user
         eventPublisher.publishEvent(newUser);
-
-        eventPublisher.publishEvent(new AuditRequest(newUser, AuditAction.REGISTER,
-                Map.of("message", "New user created")));
-
-        return authHelper.createAuthResponse(jwtService, newUser);
+        return authHelper.createAuthResponse(jwtService, newUser, AuditAction.REGISTER);
     }
 
+    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse login(AuthRequest request) {
-        User user = userRepo.findByEmailAndDeletedAtIsNull(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        User user = userRepo.findByEmail(request.email())
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (user.isLocked()) {
-            if (user.getLockedUntil() != null && user.getLockedUntil().isBefore(Instant.now())) {
-                user.setLocked(false);
-                user.setFailedLoginAttempts(0);
-                user.setLockedUntil(null);
-                userRepo.save(user);
-            } else {
-                throw new AuthenticationException("Account is temporarily locked. Try again later.");
-            }
-
-            eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN_FAILURE,
-                    Map.of("message", "Login failed")));
-        }
+        authHelper.handleDeletedAccount(user);
+        authHelper.handleLockedAccount(user);
 
         try {
-            Authentication authentication = authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
-            CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
-
-            if (principal == null){
-                throw new AuthenticationException("Unexpected principal type");
-            }
-
-            user.setFailedLoginAttempts(0);
-            user.setLockedUntil(null);
-            user.setLocked(false);
-            userRepo.save(user);
-
-            eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN,
-                    Map.of("message", "User logged in successfully")));
-
-            return authHelper.createAuthResponse(jwtService, user);
+            authHelper.handleLockReset(user);
+            return authHelper.createAuthResponse(jwtService, user, AuditAction.LOCAL_LOGIN);
 
         } catch (BadCredentialsException e) {
-            int newAttempts = user.getFailedLoginAttempts() + 1;
-            user.setFailedLoginAttempts(newAttempts);
-
-            eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN_ATTEMPT,
-                    Map.of("message", "Failed login attempts: " + newAttempts)));
-
-            if (newAttempts >= 5) {
-                user.setLocked(true);
-                user.setLockedUntil(Instant.now().plus(Duration.ofMinutes(15)));
-            }
-
-            userRepo.save(user);
-            throw new AuthenticationException(e.getMessage());
+            authHelper.handleFailedLoginAttempt(user);
+            throw new AuthenticationException("Bad Credentials");
         }
     }
 
@@ -180,8 +129,7 @@ public class AuthService {
         String token = request.refreshToken();
         String userId = jwtService.extractUserId(token);
 
-        User user = userRepo.findByIdAndDeletedAtIsNull(UUID.fromString(userId))
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userService.fetchUser(UUID.fromString(userId));
 
         RefreshToken storedToken = refreshTokenRepo.findByTokenHash(token)
                 .filter(refreshToken ->
@@ -209,21 +157,15 @@ public class AuthService {
                 })
                 .orElse(false);
 
-        if (revoked) {
-            eventPublisher.publishEvent(new AuditRequest(
-                    user,
-                    AuditAction.LOGOUT,
-                    Map.of("message", "User logout success")
-            ));
-        } else {
-            eventPublisher.publishEvent(new AuditRequest(
-                    user,
-                    AuditAction.LOGOUT,
-                    Map.of("message", "Logout attempted but token not found")
-            ));
-        }
+        String message = (revoked) ? "User logout success" : "Logout attempted but token not found";
+
+        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGOUT,
+                Map.of("message", message)
+        ));
     }
 
+    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse googleLogin(GoogleRequest request)
             throws GeneralSecurityException, IOException {
         GoogleIdToken idToken = verifier.verify(request.idToken());
@@ -231,14 +173,18 @@ public class AuthService {
         if (idToken == null){throw new ValidationException("Google token is invalid");}
 
         GoogleIdToken.Payload payload = idToken.getPayload();
-        User user = userService.syncGoogleWithLocal(payload);
 
-        return authHelper.createAuthResponse(jwtService, user);
+        User user = authHelper.syncGoogleWithLocal(payload);
+        authHelper.handleLockedAccount(user);
+        authHelper.handleDeletedAccount(user);
+        authHelper.handleLockReset(user);
+
+        return authHelper.createAuthResponse(jwtService, user, AuditAction.OAUTH_LOGIN);
     }
 
-//    =========================================================================================
-//    PASSKEY AUTHENTICATION METHODS HERE
-//    =========================================================================================
+    /**
+     * PASSKEY AUTHENTICATION METHODS HERE
+     */
 
     public PasskeyOptionsResponse startPasskeyRegistration(
             HttpServletRequest request, HttpServletResponse response) {
@@ -251,7 +197,7 @@ public class AuthService {
         PublicKeyCredentialCreationOptions options =
                 relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
 
-        optionsRepository.save(request, response, options);
+        creationOptionsRepository.save(request, response, options);
         return PasskeyOptionsResponse.toResponse(options);
     }
 
@@ -259,7 +205,7 @@ public class AuthService {
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             PasskeyRegistrationRequest request, CustomUserPrincipal principal) {
 
-        PublicKeyCredentialCreationOptions options = optionsRepository.load(servletRequest);
+        PublicKeyCredentialCreationOptions options = creationOptionsRepository.load(servletRequest);
         RelyingPartyPublicKey publicKey = new RelyingPartyPublicKey(request.credential(), request.label());
 
         assert options != null;
@@ -268,15 +214,13 @@ public class AuthService {
         CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
         User existingUser = userService.fetchUser(principal.id());
-        String provider = existingUser.getProvider();
+        authHelper.handleAuthProviders(existingUser, "PASSKEY");
 
-        if (provider == null) {
-            existingUser.setProvider("PASSKEY");
-        } else if (!provider.contains("PASSKEY")) {
-            existingUser.setProvider(provider + ",PASSKEY");
-        }
+        eventPublisher.publishEvent(
+                new AuditRequest(existingUser, AuditAction.PASSKEY_LINK,
+                        Map.of("message", "Passkey linked successfully")));
 
-        optionsRepository.save(servletRequest, servletResponse, null);
+        creationOptionsRepository.save(servletRequest, servletResponse, null);
         return record;
     }
 
@@ -292,6 +236,8 @@ public class AuthService {
         return options;
     }
 
+    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse finishPasskeyAuthentication(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             PasskeyLoginRequest request) {
@@ -305,15 +251,22 @@ public class AuthService {
         UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
         User user = userService.fetchUser(userId);
+        authHelper.handleLockedAccount(user);
+        authHelper.handleDeletedAccount(user);
+        authHelper.handleLockReset(user);
 
         requestOptionsRepository.save(servletRequest, servletResponse, null);
 
-        return authHelper.createAuthResponse(jwtService, user);
+        return authHelper.createAuthResponse(jwtService, user, AuditAction.PASSKEY_LOGIN);
     }
 
-//    =========================================================================================
-//    EMAIL RELATED METHODS HERE
-//    =========================================================================================
+    public void deleteSavedPasskey(CustomUserPrincipal principal, String credentialId){
+        passkeyRepo.deleteByCredentialIdAndUserId(credentialId, principal.id());
+    }
+
+    /**
+     * EMAIL RELATED METHODS HERE
+     */
 
     public void verifyEmail(String rawToken) {
         String hashedToken = hashToken(rawToken);
@@ -391,9 +344,9 @@ public class AuthService {
                 Map.of("message", "User successfully changed email from " + oldEmail + " to " + newEmail)));
     }
 
-//    =========================================================================================
-//    PASSWORD RELATED METHODS HERE
-//    =========================================================================================
+    /**
+     * PASSWORD RELATED METHODS HERE
+     */
 
     public void requestPasswordReset(ForgotPasswordRequest request) {
         User user = userRepo.findByEmailAndDeletedAtIsNull(request.email())
@@ -404,7 +357,7 @@ public class AuthService {
 
         if (hasNoPassword && isNotGoogleUser) {
             emailService.sendSocialLoginReminder(user, user.getProvider());
-            return;
+            throw new IllegalStateException("Cannot request password-reset for non-local account");
         }
 
         String rawToken = UUID.randomUUID().toString();
@@ -431,7 +384,6 @@ public class AuthService {
         user.setLocked(false);
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
-        user.setEmailVerified(true);
 
         refreshTokenRepo.revokeAllByUserId(user.getId());
         token.setUsed(true);

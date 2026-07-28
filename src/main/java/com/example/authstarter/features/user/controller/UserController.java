@@ -5,6 +5,7 @@ import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
 import com.example.authstarter.features.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,23 +21,29 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
+    @Operation(summary = "Retrieve the authenticated user's profile.")
     public ResponseEntity<ApiResponse<UserDetailsResponse>> getCurrentUser(
-            @AuthenticationPrincipal CustomUserPrincipal principal){
+            @AuthenticationPrincipal CustomUserPrincipal principal
+    ){
         UserDetailsResponse response = userService.getCurrentUser(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Current User Information", response));
     }
 
     @PostMapping("/me/deletion-request")
+    @Operation(summary = "Request account deletion.")
     public ResponseEntity<Void> requestDelete(
-            @AuthenticationPrincipal CustomUserPrincipal principal) {
+            @AuthenticationPrincipal CustomUserPrincipal principal
+    ) {
         userService.initiateDeletion(principal.id());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/me")
+    @Operation(summary = "Delete the authenticated user's account.")
     public ResponseEntity<Void> confirmDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal,
-            @RequestBody AccountDeletionRequest request) {
+            @RequestBody AccountDeletionRequest request
+    ) {
         userService.confirmSoftDelete(
                 principal.id(),
                 request.password(),

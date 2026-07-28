@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -22,7 +23,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Internal Server Error (500)",
                         "Error caught: " + ex.getClass().getSimpleName()
-                                + "-- Error Info: " + ex.getMessage()));
+                                + " -- Error Info: " + ex.getMessage()));
     }
 
     @ExceptionHandler(AlreadyExistException.class)
@@ -48,7 +49,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             AuthenticationException.class,
             NotFoundException.class,
-            ValidationException.class
+            ValidationException.class,
+            MethodArgumentNotValidException.class
     })
     public ResponseEntity<ApiResponse<String>> handleBadException(Exception ex){
         return ResponseEntity
