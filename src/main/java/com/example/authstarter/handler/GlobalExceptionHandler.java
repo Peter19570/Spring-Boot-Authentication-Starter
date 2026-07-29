@@ -7,9 +7,11 @@ import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +35,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Conflict (409)", ex.getMessage()));
     }
 
+    @ExceptionHandler({HttpRequestMethodNotSupportedException.class})
+    public ResponseEntity<ApiResponse<String>> handleMethodNotAllowed(Exception ex){
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error("Method Not Allowed (405)", ex.getMessage()));
+    }
+
     @ExceptionHandler({
             BadCredentialsException.class,
             UsernameNotFoundException.class,
@@ -50,7 +59,8 @@ public class GlobalExceptionHandler {
             AuthenticationException.class,
             NotFoundException.class,
             ValidationException.class,
-            MethodArgumentNotValidException.class
+            MethodArgumentNotValidException.class,
+            HttpMessageNotReadableException.class
     })
     public ResponseEntity<ApiResponse<String>> handleBadException(Exception ex){
         return ResponseEntity
