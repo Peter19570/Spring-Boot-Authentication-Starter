@@ -34,7 +34,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepo userRepo;
+    private final AuthHelper authHelper;
     private final UserMapper userMapper;
     private final OtpService otpService;
     private final PasskeyRepo passkeyRepo;
@@ -46,26 +46,19 @@ public class UserService {
     private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "all-users", key = "#id")
-    public User fetchUser(UUID id){
-        return userRepo.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-    }
-
-    @Transactional(readOnly = true)
     public UserDetailsResponse getCurrentUser(UUID currentUserId){
-        User currentUser = fetchUser(currentUserId);
+        User currentUser = authHelper.fetchUser(currentUserId);
         return userMapper.toDetailsDto(currentUser);
     }
 
     public void initiateDeletion(UUID currentUserId) {
-        User currentUser = fetchUser(currentUserId);
+        User currentUser = authHelper.fetchUser(currentUserId);
         String code = otpService.generateOtp(currentUser.getEmail());
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
     public void confirmSoftDelete(UUID currentUserId, String password, String otp) {
-        User currentUser = fetchUser(currentUserId);
+        User currentUser = authHelper.fetchUser(currentUserId);
 
         if (currentUser.getPassword() != null) {
             if (!passwordEncoder.matches(password, currentUser.getPassword())) {

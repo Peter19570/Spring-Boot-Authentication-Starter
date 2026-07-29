@@ -58,8 +58,8 @@ import java.util.UUID;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepo userRepo;
@@ -67,7 +67,6 @@ public class AuthService {
     private final AuthMapper authMapper;
     private final AuthHelper authHelper;
     private final PasskeyRepo passkeyRepo;
-    private final UserService userService;
     private final EmailService emailService;
     private final GoogleIdTokenVerifier verifier;
     private final PasswordEncoder passwordEncoder;
@@ -129,7 +128,7 @@ public class AuthService {
         String token = request.refreshToken();
         String userId = jwtService.extractUserId(token);
 
-        User user = userService.fetchUser(UUID.fromString(userId));
+        User user = authHelper.fetchUser(UUID.fromString(userId));
 
         RefreshToken storedToken = refreshTokenRepo.findByTokenHash(token)
                 .filter(refreshToken ->
@@ -147,7 +146,7 @@ public class AuthService {
     }
 
     public void logout(RefreshTokenRequest request, UUID userId) {
-        User user = userService.fetchUser(userId);
+        User user = authHelper.fetchUser(userId);
 
         boolean revoked = refreshTokenRepo.findByTokenHash(request.refreshToken())
                 .map(token -> {
@@ -213,7 +212,7 @@ public class AuthService {
 
         CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
-        User existingUser = userService.fetchUser(principal.id());
+        User existingUser = authHelper.fetchUser(principal.id());
         authHelper.handleAuthProviders(existingUser, "PASSKEY");
 
         eventPublisher.publishEvent(
@@ -250,7 +249,7 @@ public class AuthService {
         PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
         UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
-        User user = userService.fetchUser(userId);
+        User user = authHelper.fetchUser(userId);
         authHelper.handleLockedAccount(user);
         authHelper.handleDeletedAccount(user);
         authHelper.handleLockReset(user);
@@ -287,7 +286,7 @@ public class AuthService {
     }
 
     public void resendVerificationEmail(CustomUserPrincipal principal){
-        User user = userService.fetchUser(principal.id());
+        User user = authHelper.fetchUser(principal.id());
         boolean isEmailVerified = user.isEmailVerified();
 
         if (isEmailVerified){
@@ -298,7 +297,7 @@ public class AuthService {
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
-        User user = userService.fetchUser(userId);
+        User user = authHelper.fetchUser(userId);
 
         if (user.getPassword() == null) {
             throw new ValidationException("Cannot reset email with empty password");

@@ -17,6 +17,7 @@ import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -39,6 +41,13 @@ public class AuthHelper {
     private final AuthMapper authMapper;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "all-users", key = "#id")
+    public User fetchUser(UUID id){
+        return userRepo.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
 
     public AuthResponse createAuthResponse(JwtService jwtService, User user, AuditAction auditAction){
         eventPublisher.publishEvent(new AuditRequest(user, auditAction,
