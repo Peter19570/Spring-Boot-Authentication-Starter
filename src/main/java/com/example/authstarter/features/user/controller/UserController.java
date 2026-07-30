@@ -8,6 +8,7 @@ import com.example.authstarter.features.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,23 +25,27 @@ public class UserController {
     @Operation(summary = "Retrieve the authenticated user's profile.")
     public ResponseEntity<ApiResponse<UserDetailsResponse>> getCurrentUser(
             @AuthenticationPrincipal CustomUserPrincipal principal
-    ){
+    ) {
         UserDetailsResponse response = userService.getCurrentUser(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Current User Information", response));
     }
 
     @PostMapping("/me/deletion-request")
     @Operation(summary = "Request account deletion.")
-    public ResponseEntity<Void> requestDelete(
+    public ResponseEntity<ApiResponse<String>> requestDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         userService.initiateDeletion(principal.id());
-        return ResponseEntity.ok().build();
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        "Deletion Request Initiated",
+                        "Account deletion request submitted successfully"));
     }
 
     @DeleteMapping("/me")
     @Operation(summary = "Delete the authenticated user's account.")
-    public ResponseEntity<Void> confirmDelete(
+    public ResponseEntity<ApiResponse<String>> confirmDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody AccountDeletionRequest request
     ) {
@@ -49,6 +54,9 @@ public class UserController {
                 request.password(),
                 request.otp()
         );
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .body(ApiResponse.success(
+                        "Account Deleted",
+                        "User account has been deleted successfully"));
     }
 }

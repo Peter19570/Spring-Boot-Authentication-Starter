@@ -43,9 +43,9 @@ public class AuthHelper {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "all-users", key = "#id")
-    public User fetchUser(UUID id){
-        return userRepo.findByIdAndDeletedAtIsNull(id)
+    @Cacheable(cacheNames = "all-users", key = "#userId")
+    public User fetchUser(UUID userId){
+        return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 

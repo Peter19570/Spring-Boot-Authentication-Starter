@@ -2,8 +2,6 @@ package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
-import com.example.authstarter.features.auth.exceptions.AuthenticationException;
-import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
@@ -15,10 +13,9 @@ import com.example.authstarter.features.auth.service.notification.OtpService;
 import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
-import com.example.authstarter.features.user.repo.UserRepo;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,19 +43,21 @@ public class UserService {
     private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @Transactional(readOnly = true)
-    public UserDetailsResponse getCurrentUser(UUID currentUserId){
-        User currentUser = authHelper.fetchUser(currentUserId);
+    public UserDetailsResponse getCurrentUser(UUID userId){
+        User currentUser = authHelper.fetchUser(userId);
         return userMapper.toDetailsDto(currentUser);
     }
 
-    public void initiateDeletion(UUID currentUserId) {
-        User currentUser = authHelper.fetchUser(currentUserId);
+    public void initiateDeletion(UUID userId) {
+        User currentUser = authHelper.fetchUser(userId);
         String code = otpService.generateOtp(currentUser.getEmail());
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    public void confirmSoftDelete(UUID currentUserId, String password, String otp) {
-        User currentUser = authHelper.fetchUser(currentUserId);
+    @CachePut(cacheNames = "users", key = "#userId")
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    public void confirmSoftDelete(UUID userId, String password, String otp) {
+        User currentUser = authHelper.fetchUser(userId);
 
         if (currentUser.getPassword() != null) {
             if (!passwordEncoder.matches(password, currentUser.getPassword())) {

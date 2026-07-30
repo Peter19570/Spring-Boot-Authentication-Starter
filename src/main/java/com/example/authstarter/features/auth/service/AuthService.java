@@ -25,7 +25,6 @@ import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
-import com.example.authstarter.features.user.service.UserService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
@@ -145,6 +144,8 @@ public class AuthService {
         return authHelper.createTokenResponse(jwtService, user);
     }
 
+    @CachePut(cacheNames = "users", key = "#userId")
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
     public void logout(RefreshTokenRequest request, UUID userId) {
         User user = authHelper.fetchUser(userId);
 
