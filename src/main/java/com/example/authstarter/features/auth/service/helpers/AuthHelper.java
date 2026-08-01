@@ -6,6 +6,7 @@ import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
 import com.example.authstarter.features.auth.dto.response.NameParts;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
+import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
@@ -49,8 +50,13 @@ public class AuthHelper {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
+    public User fetchUserFresh(UUID userId){
+        return userRepo.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
     public AuthResponse createAuthResponse(JwtService jwtService, User user, AuditAction auditAction){
-        eventPublisher.publishEvent(new AuditRequest(user, auditAction,
+        eventPublisher.publishEvent(AuditRequest.log(user, auditAction,
                 Map.of("message", "User logged in successfully")));
 
         return new AuthResponse(
@@ -91,7 +97,7 @@ public class AuthHelper {
                 .orElseGet(() -> {
                     User user = authMapper.toEntityFromGooglePayload(payload);
 
-                    eventPublisher.publishEvent(new AuditRequest(user, AuditAction.REGISTER,
+                    eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.REGISTER,
                             Map.of("message", "User created account with Google login")));
 
                     return userRepo.save(user);
@@ -100,10 +106,11 @@ public class AuthHelper {
         handleLockedAccount(existingUser);
         handleDeletedAccount(existingUser);
 
-        if (existingUser.getFirstName().equals("not-set") || existingUser.getLastName().equals("not-set")){
+        if (existingUser.getFirstName().equals("not-set")
+                || existingUser.getLastName().equals("not-set")){
             authMapper.updateEntityFromGooglePayload(payload, existingUser);
 
-            eventPublisher.publishEvent(new AuditRequest(existingUser, AuditAction.SOCIAL_LINK,
+            eventPublisher.publishEvent(AuditRequest.log(existingUser, AuditAction.SOCIAL_LINK,
                     Map.of("message", "Google account linked successfully")));
         }
 
@@ -157,7 +164,7 @@ public class AuthHelper {
 
         userRepo.save(user);
 
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN_ATTEMPT,
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGIN_ATTEMPT,
                 Map.of("message", "Failed login attempts: " + newAttempts)));
     }
 
@@ -186,5 +193,11 @@ public class AuthHelper {
         }
 
         return NameParts.names(firstName, lastName);
+    }
+
+    public void handleUsedEmail(String email){
+        if (userRepo.existsByEmail(email)) {
+            throw new AlreadyExistException("Email already registered");
+        }
     }
 }

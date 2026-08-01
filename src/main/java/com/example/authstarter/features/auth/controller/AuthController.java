@@ -68,15 +68,12 @@ public class AuthController {
     @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Log out the authenticated user.")
-    public ResponseEntity<ApiResponse<String>> logout(
+    public ResponseEntity<Void> logout(
             @Valid @RequestBody RefreshTokenRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         authService.logout(request, principal.id());
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Logout success",
-                        "You have successfully logged out of your account."));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/refresh")
@@ -94,51 +91,43 @@ public class AuthController {
 
     @GetMapping("/verify-email")
     @Operation(summary = "Verify a user's email address.")
-    public ResponseEntity<ApiResponse<String>> verifyEmail(
+    public ResponseEntity<Void> verifyEmail(
             @RequestParam
             @NotNull(message = "Email verification token is required") String token
     ) {
         authService.verifyEmail(token);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Verification Complete",
-                "Identity verification successful."));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/resend-verification-email")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Resend email verification.")
-    public ResponseEntity<ApiResponse<String>> resendVerificationEmail(
+    public ResponseEntity<Void> resendVerificationEmail(
             @AuthenticationPrincipal CustomUserPrincipal principal
     ){
         authService.resendVerificationEmail(principal);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Verification Email Resent",
-                "Kindly check your inbox for the new verification link that has been sent"));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/change-email")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Change the user's email address.")
-    public ResponseEntity<ApiResponse<String>> requestChange(
+    public ResponseEntity<Void> requestChange(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody @Valid EmailChangeRequest request
     ) {
         authService.requestEmailChange(principal.id(), request);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Verification Required",
-                "Please check your new inbox and click the secure activation link we just sent you."));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/confirm-email")
     @Operation(summary = "Confirm a user's email address.")
-    public ResponseEntity<ApiResponse<String>> confirmChange(
+    public ResponseEntity<Void> confirmChange(
             @RequestParam
             @NotNull(message = "Email verification token is required") String token
     ) {
         authService.confirmEmailChange(token);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Email Address Updated",
-                "Your primary email address has been successfully changed."));
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -197,16 +186,12 @@ public class AuthController {
     @DeleteMapping("/passkeys/{credentialId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Remove a registered passkey.")
-    public ResponseEntity<ApiResponse<String>> deleteSavedPasskey(
+    public ResponseEntity<Void> deleteSavedPasskey(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @PathVariable String credentialId
     ){
         authService.deleteSavedPasskey(principal, credentialId);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .body(ApiResponse.success(
-                        "Passkey Deletion Triggered",
-                        "The selected passkey will be removed."));
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -215,25 +200,19 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     @Operation(summary = "Request a password reset.")
-    public ResponseEntity<ApiResponse<String>> forgotPassword(
+    public ResponseEntity<Void> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request
     ) {
         authService.requestPasswordReset(request);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Password Reset Initiated",
-                "An email containing further instructions has been dispatched to " +
-                        "the provided address, provided a corresponding account exists."));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/reset-password")
     @Operation(summary = "Reset a user's password using a valid password reset token.")
-    public ResponseEntity<ApiResponse<String>> resetPassword(
+    public ResponseEntity<Void> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request
     ) {
         authService.resetPassword(request.token(), request.newPassword());
-        return ResponseEntity.ok(ApiResponse.success(
-                "Password Updated",
-                "Your password has been successfully reset." +
-                " You may now log in with your new credentials."));
+        return ResponseEntity.noContent().build();
     }
 }

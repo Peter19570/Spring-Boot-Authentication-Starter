@@ -87,10 +87,7 @@ public class AuthService {
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
         NameParts names = authHelper.handleUsernameFromEmail(email);
-
-        if (userRepo.existsByEmail(request.email())) {
-            throw new AlreadyExistException("Email already registered");
-        }
+        authHelper.handleUsedEmail(request.email());
 
         User user = authMapper.toEntityFromAuth(request, names.firstName(), names.lastName());
         user.setPassword(passwordEncoder.encode(request.password()));
@@ -159,7 +156,7 @@ public class AuthService {
 
         String message = (revoked) ? "User logout success" : "Logout attempted but token not found";
 
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGOUT,
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGOUT,
                 Map.of("message", message)
         ));
     }
@@ -213,11 +210,11 @@ public class AuthService {
 
         CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
-        User existingUser = authHelper.fetchUser(principal.id());
+        User existingUser = authHelper.fetchUserFresh(principal.id());
         authHelper.handleAuthProviders(existingUser, "PASSKEY");
 
         eventPublisher.publishEvent(
-                new AuditRequest(existingUser, AuditAction.PASSKEY_LINK,
+                AuditRequest.log(existingUser, AuditAction.PASSKEY_LINK,
                         Map.of("message", "Passkey linked successfully")));
 
         creationOptionsRepository.save(servletRequest, servletResponse, null);
@@ -256,7 +253,6 @@ public class AuthService {
         authHelper.handleLockReset(user);
 
         requestOptionsRepository.save(servletRequest, servletResponse, null);
-
         return authHelper.createAuthResponse(jwtService, user, AuditAction.PASSKEY_LOGIN);
     }
 
@@ -282,7 +278,7 @@ public class AuthService {
         userRepo.save(user);
         emailVerificationTokenRepo.save(token);
 
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.EMAIL_VERIFIED,
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_VERIFIED,
                 Map.of("message", "Email verified successfully")));
     }
 
@@ -294,6 +290,7 @@ public class AuthService {
             throw new IllegalStateException("Email has been verified already");
         }
 
+        // Listener will pick the obj and send the mail
         eventPublisher.publishEvent(user);
     }
 
@@ -304,9 +301,7 @@ public class AuthService {
             throw new ValidationException("Cannot reset email with empty password");
         }
 
-        if (userRepo.existsByEmail(request.newEmail())) {
-            throw new IllegalStateException("Email is already in use.");
-        }
+        authHelper.handleUsedEmail(request.newEmail());
 
         String token = UUID.randomUUID().toString();
         EmailVerificationToken emailVerificationToken = new EmailVerificationToken();
@@ -317,9 +312,6 @@ public class AuthService {
         emailVerificationTokenRepo.save(emailVerificationToken);
 
         emailService.sendEmailChangeConfirmation(request.newEmail(), token);
-
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.EMAIL_CHANGE_REQUEST,
-                Map.of("message", "Email change request success")));
     }
 
     public void confirmEmailChange(String token) {
@@ -336,12 +328,11 @@ public class AuthService {
         String newEmail = emailVerificationToken.getNewEmail();
 
         user.setEmail(newEmail);
-        userRepo.save(user);
-
         emailVerificationTokenRepo.delete(emailVerificationToken);
 
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.EMAIL_CHANGE_CONFIRM,
-                Map.of("message", "User successfully changed email from " + oldEmail + " to " + newEmail)));
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_CHANGE_CONFIRM,
+                Map.of("message", "User successfully changed email from " +
+                        oldEmail + " to " + newEmail)));
     }
 
     /**
@@ -368,7 +359,7 @@ public class AuthService {
         passwordResetTokenRepo.save(resetToken);
 
         emailService.sendPasswordResetEmail(user, rawToken);
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.PASSWORD_REQUEST,
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_REQUEST,
                 Map.of("message", "Password change requested for user")));
     }
 
@@ -391,7 +382,7 @@ public class AuthService {
         userRepo.save(user);
         passwordResetTokenRepo.save(token);
 
-        eventPublisher.publishEvent(new AuditRequest(user, AuditAction.PASSWORD_RESET,
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_RESET,
                 Map.of("message", "User reset password successfully")));
     }
 

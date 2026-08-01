@@ -12,6 +12,6 @@ public interface EmailVerificationTokenRepo extends JpaRepository<EmailVerificat
 
     Optional<EmailVerificationToken> findByTokenHash(String tokenHash);
 
-    void deleteByUserId(UUID userId);
+    void deleteAllByUserId(UUID userId);
 
 }

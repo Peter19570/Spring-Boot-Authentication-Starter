@@ -32,31 +32,20 @@ public class UserController {
 
     @PostMapping("/me/deletion-request")
     @Operation(summary = "Request account deletion.")
-    public ResponseEntity<ApiResponse<String>> requestDelete(
+    public ResponseEntity<Void> requestDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         userService.initiateDeletion(principal.id());
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.success(
-                        "Deletion Request Initiated",
-                        "Account deletion request submitted successfully"));
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/me")
     @Operation(summary = "Delete the authenticated user's account.")
-    public ResponseEntity<ApiResponse<String>> confirmDelete(
+    public ResponseEntity<Void> confirmDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody AccountDeletionRequest request
     ) {
-        userService.confirmSoftDelete(
-                principal.id(),
-                request.password(),
-                request.otp()
-        );
-        return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                .body(ApiResponse.success(
-                        "Account Deleted",
-                        "User account has been deleted successfully"));
+        userService.confirmSoftDelete(principal.id(), request);
+        return ResponseEntity.noContent().build();
     }
 }

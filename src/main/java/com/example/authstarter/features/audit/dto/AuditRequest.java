@@ -10,4 +10,10 @@ public record AuditRequest(
         AuditAction auditAction,
         Map<String, Object> metaData
 ) {
+    public static AuditRequest log(
+            User user,
+            AuditAction auditAction,
+            Map<String, Object> metaData){
+        return new AuditRequest(user, auditAction, metaData);
+    }
 }

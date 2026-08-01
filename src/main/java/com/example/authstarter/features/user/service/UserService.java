@@ -2,6 +2,7 @@ package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
+import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
@@ -13,6 +14,7 @@ import com.example.authstarter.features.auth.service.notification.OtpService;
 import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
+import com.example.authstarter.features.user.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -54,28 +56,28 @@ public class UserService {
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    @CachePut(cacheNames = "users", key = "#userId")
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
-    public void confirmSoftDelete(UUID userId, String password, String otp) {
-        User currentUser = authHelper.fetchUser(userId);
+    @CacheEvict(cacheNames = {"users", "all-users"}, key = "#userId")
+    public void confirmSoftDelete(UUID userId, AccountDeletionRequest request) {
+        User currentUser = authHelper.fetchUserFresh(userId);
 
         if (currentUser.getPassword() != null) {
-            if (!passwordEncoder.matches(password, currentUser.getPassword())) {
+            if (!passwordEncoder.matches(request.password(), currentUser.getPassword())) {
                 throw new BadCredentialsException("Invalid password provided for account deletion.");
             }
         }
 
-        if (!otpService.validateOtp(currentUser.getEmail(), otp.replaceAll("\\s+", ""))) {
+        if (!otpService.validateOtp(
+                currentUser.getEmail(), request.otp().replaceAll("\\s+", ""))) {
             throw new ValidationException("Invalid or expired deletion code.");
         }
 
         currentUser.setDeletedAt(Instant.now());
-        refreshTokenRepo.deleteByUserId(currentUser.getId());
-        passwordResetTokenRepo.deleteByUserId(currentUser.getId());
-        emailVerificationTokenRepo.deleteByUserId(currentUser.getId());
+        refreshTokenRepo.deleteAllByUserId(currentUser.getId());
+        passwordResetTokenRepo.deleteAllByUserId(currentUser.getId());
+        emailVerificationTokenRepo.deleteAllByUserId(currentUser.getId());
         passkeyRepo.deleteAllByUserId(currentUser.getId());
 
-        eventPublisher.publishEvent(new AuditRequest(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
+        eventPublisher.publishEvent(AuditRequest.log(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
                 Map.of("message", "User has been soft deleted")));
     }
 }
