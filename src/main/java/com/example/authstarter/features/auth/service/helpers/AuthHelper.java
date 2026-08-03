@@ -148,7 +148,7 @@ public class AuthHelper {
 
     public void handleDeletedAccount(User user){
         if (user.getDeletedAt() != null){
-            throw new NotFoundException("This account has been deleted.");
+            throw new AuthenticationException("This account has been deleted.");
         }
     }
 

@@ -17,7 +17,7 @@ A complete, fully built, and thoroughly tested authentication module for Spring 
 - **Flexible Token Handling** — Automatically supports both HTTP-only cookies and `Authorization: Bearer` tokens via a smart filter, but for this project tokens are issued to the client via json, simply tweak the methods that use the `createAuthResponse` or `createTokenResponse` private methods to send cookies rather.
 - **Async And Event Driven Email Sending** — Using Spring Boot's `@Async` annotation to keep API responses fast, you can always switch this to RabbitMQ to ensure mails reach users
 - **Swagger Documented** — Project is well documented here
-
+- **In-Memory Caching** — Making use of CaffeineCacheManager to cache response of the fetchUser method to keep the server a stateless as possible, Make sure to use with redis when server instance grows
 ---
 
 ## Architecture & Design Decisions
