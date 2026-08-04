@@ -106,11 +106,11 @@ public class EmailService {
     }
 
     private String getGreetingName(User user) {
-        if (user == null || user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
-            return "User";
+        if (user == null || user.getFirstName().equals("not-set") || user.getFirstName().trim().isEmpty()) {
+            return "there";
         }
         String name = user.getFirstName().trim();
-        if (user.getLastName() != null && !user.getLastName().trim().isEmpty()) {
+        if (!user.getLastName().equals("not-set")) {
             name += " " + user.getLastName().trim();
         }
         return name;
