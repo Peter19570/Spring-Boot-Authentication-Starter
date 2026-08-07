@@ -62,8 +62,7 @@ public class JwtFilter extends OncePerRequestFilter {
             CustomUserPrincipal principal = new CustomUserPrincipal(userId, email, authorities);
 
             if (jwtService.isTokenValid(jwt, principal.id().toString())) {
-
-                if (jwtService.extractTokenType(jwt).equals("refresh")){
+                if (!jwtService.extractTokenType(jwt).equals("at")){
                     throw new IllegalStateException("Invalid token type. Access token required.");
                 }
 

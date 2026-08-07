@@ -131,7 +131,7 @@ public class AuthService {
                         !refreshToken.isRevoked() && refreshToken.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Refresh token is invalid or expired"));
 
-        if (!jwtService.extractTokenType(storedToken.getTokenHash()).equals("refresh")){
+        if (!jwtService.extractTokenType(storedToken.getTokenHash()).equals("rt")){
             throw new IllegalStateException("Invalid token type. Refresh token required.");
         }
 

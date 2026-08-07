@@ -40,7 +40,7 @@ public class JwtService {
 
         claims.put("email", principal.email());
         claims.put("roles", roles);
-        claims.put("type", "access");
+        claims.put("type", "at");
 
         return createToken(claims, principal.id().toString(), accessTokenExpiration.toMillis());
     }
@@ -48,7 +48,7 @@ public class JwtService {
     public String generateRefreshToken(CustomUserPrincipal principal) {
         Map<String, Object> claims = new HashMap<>();
 
-        claims.put("type", "refresh");
+        claims.put("type", "rt");
         return createToken(claims, principal.id().toString(), refreshTokenExpiration.toMillis());
     }
 
