@@ -105,6 +105,7 @@ public class AuthHelper {
 
         handleLockedAccount(existingUser);
         handleDeletedAccount(existingUser);
+        handleLockReset(existingUser);
 
         if (existingUser.getFirstName().equals("not-set")
                 || existingUser.getLastName().equals("not-set")){

@@ -172,10 +172,6 @@ public class AuthService {
         GoogleIdToken.Payload payload = idToken.getPayload();
 
         User user = authHelper.syncGoogleWithLocal(payload);
-        authHelper.handleLockedAccount(user);
-        authHelper.handleDeletedAccount(user);
-        authHelper.handleLockReset(user);
-
         return authHelper.createAuthResponse(jwtService, user, AuditAction.OAUTH_LOGIN);
     }
 
