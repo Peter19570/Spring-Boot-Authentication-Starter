@@ -14,7 +14,7 @@ public interface AuthMapper {
     @Mapping(target = "provider", constant = "LOCAL")
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
-    User toEntityFromAuth(AuthRequest request, String firstName, String lastName);
+    User toEntityFromAuthRequest(AuthRequest request, String firstName, String lastName);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", expression = "java(payload.getEmail())")

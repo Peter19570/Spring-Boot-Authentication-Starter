@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.UnsupportedEncodingException;
 import java.time.Year;
 
 @Service
@@ -25,6 +26,12 @@ public class EmailService {
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
+
+    @Value("${spring.mail.username}")
+    private String username;
+
+    @Value("${spring.application.name}")
+    private String appName;
 
     @Async("emailExecutor")
     public void sendVerificationEmail(User user, String token) {
@@ -120,12 +127,13 @@ public class EmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(username, appName);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(body, true);
             mailSender.send(message);
 
-        } catch (MessagingException | MailSendException e) {
+        } catch (MessagingException | MailSendException | UnsupportedEncodingException e ) {
             throw new MessageException("Failed to send email");
         }
     }

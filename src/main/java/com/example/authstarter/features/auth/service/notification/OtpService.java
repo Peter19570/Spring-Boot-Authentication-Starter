@@ -1,70 +1,35 @@
 package com.example.authstarter.features.auth.service.notification;
 
-import jakarta.annotation.PostConstruct;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import com.github.benmanes.caffeine.cache.Cache;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.*;
 
-//    =========================================================================================
-//    THIS IS SUPER BASIC, SIMPLY HAVE A THIRD PARTY HANDLE THIS
-//    =========================================================================================
-
 @Service
+@RequiredArgsConstructor
 public class OtpService {
 
-    private final ConcurrentHashMap<String, OtpData> otpStore =
-            new ConcurrentHashMap<>();
+    private final Cache<String, String> otpStore;
 
-    private final ScheduledExecutorService cleanupExecutor =
-            Executors.newSingleThreadScheduledExecutor();
-
-    @PostConstruct
-    public void init() {
-        // Clean up expired OTPs every minute
-        cleanupExecutor.scheduleAtFixedRate(
-                this::cleanupExpiredOtps, 1, 1, TimeUnit.MINUTES);
-    }
-
-    public String generateOtp(String identifier) {
+    public String generateOtp(String email) {
         String otpCode = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
-        OtpData otpData = new OtpData(otpCode, System.currentTimeMillis() + 300000); // 5 min expiry
-        otpStore.put(identifier, otpData);
+        otpStore.put(email, otpCode);
         return otpCode;
     }
 
-    public boolean validateOtp(String identifier, String otpCode) {
-        OtpData otpData = otpStore.get(identifier);
+    public boolean validateOtp(String email, String otpCode) {
+        String savedCode = otpStore.getIfPresent(email);
 
-        if (otpData == null) {
-            return false;
+        if (savedCode != null){
+            boolean isValid = savedCode.equals(otpCode);
+
+            if (isValid) {otpStore.invalidate(email);}
+
+            return isValid;
         }
 
-        if (System.currentTimeMillis() > otpData.expiryTime) {
-            otpStore.remove(identifier);
-            return false;
-        }
-
-        boolean isValid = otpData.otpCode.equals(otpCode);
-
-        if (isValid) {
-            otpStore.remove(identifier);
-        }
-
-        return isValid;
-    }
-
-    private void cleanupExpiredOtps() {
-        long now = System.currentTimeMillis();
-        otpStore.entrySet().removeIf(entry -> now > entry.getValue().expiryTime);
-    }
-
-    @Data
-    @AllArgsConstructor
-    private static class OtpData {
-        private String otpCode;
-        private long expiryTime;
+        return false;
     }
 }

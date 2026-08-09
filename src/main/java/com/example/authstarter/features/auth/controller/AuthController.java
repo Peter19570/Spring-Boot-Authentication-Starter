@@ -104,7 +104,7 @@ public class AuthController {
     @Operation(summary = "Resend email verification.")
     public ResponseEntity<Void> resendVerificationEmail(
             @AuthenticationPrincipal CustomUserPrincipal principal
-    ){
+    ) {
         authService.resendVerificationEmail(principal);
         return ResponseEntity.noContent().build();
     }
@@ -140,7 +140,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> startPasskeyRegistration(
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse
-    ){
+    ) {
         PasskeyOptionsResponse response = authService.startPasskeyRegistration(
                 servletRequest, servletResponse);
         return ResponseEntity.ok(ApiResponse.success("Passkey Registration Initiated", response));
@@ -154,7 +154,7 @@ public class AuthController {
             HttpServletResponse servletResponse,
             @RequestBody PasskeyRegistrationRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal
-    ){
+    ) {
         CredentialRecord response = authService.finishPasskeyRegistration(
                 servletRequest, servletResponse, request, principal);
         return ResponseEntity.ok(ApiResponse.success("Public Key Saved", response));
@@ -165,7 +165,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication(
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse
-    ){
+    ) {
         PublicKeyCredentialRequestOptions response = authService.startPasskeyAuthentication(
                 servletRequest, servletResponse);
         return ResponseEntity.ok(ApiResponse.success("Passkey Challenge Sent Successfully", response));
@@ -177,7 +177,7 @@ public class AuthController {
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse,
             @RequestBody PasskeyLoginRequest request
-    ){
+    ) {
         AuthResponse response = authService.finishPasskeyAuthentication(
                 servletRequest, servletResponse, request);
         return ResponseEntity.ok(ApiResponse.success("Passkey Login Success", response));
@@ -189,7 +189,7 @@ public class AuthController {
     public ResponseEntity<Void> deleteSavedPasskey(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @PathVariable String credentialId
-    ){
+    ) {
         authService.deleteSavedPasskey(principal, credentialId);
         return ResponseEntity.noContent().build();
     }

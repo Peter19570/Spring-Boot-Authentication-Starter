@@ -4,7 +4,7 @@ import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
-import com.example.authstarter.features.auth.dto.response.NameParts;
+import com.example.authstarter.features.auth.dto.response.NamePartsResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
@@ -175,7 +175,7 @@ public class AuthHelper {
         user.setLocked(false);
     }
 
-    public NameParts handleUsernameFromEmail(String email){
+    public NamePartsResponse handleUsernameFromEmail(String email){
         int atIndex = email.indexOf("@");
         String firstName = "not-set";
         String lastName = "not-set";
@@ -193,7 +193,7 @@ public class AuthHelper {
             }
         }
 
-        return NameParts.names(firstName, lastName);
+        return NamePartsResponse.names(firstName, lastName);
     }
 
     public void handleUsedEmail(String email){

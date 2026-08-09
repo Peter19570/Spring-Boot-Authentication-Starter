@@ -28,7 +28,7 @@ public class AuditController {
     @Operation(summary = "Retrieve audit records.")
     public ResponseEntity<ApiResponse<PageResponse<AuditResponse>>> getAllAudits(
             @RequestParam(defaultValue = "0") int page
-    ){
+    ) {
         Pageable pageable = PageRequest.of(page, 50, Sort.by("createdAt").descending());
         PageResponse<AuditResponse> responses = auditService.getAllAudits(pageable);
         return ResponseEntity.ok(ApiResponse.success("All Audit Logs", responses));

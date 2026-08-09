@@ -5,9 +5,11 @@ import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.shared.dto.ApiResponse;
+import jakarta.mail.MessagingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mail.MailSendException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,6 +17,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.io.UnsupportedEncodingException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,6 +30,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Internal Server Error (500)",
                         "Error caught: " + ex.getClass().getSimpleName()
                                 + " -- Error Info: " + ex.getMessage()));
+    }
+
+    @ExceptionHandler({
+            MailSendException.class,
+            UnsupportedEncodingException.class,
+            MessagingException.class
+    })
+    public ResponseEntity<ApiResponse<String>> handleInternalServerException(Exception ex){
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Internal Server Error (500)", ex.getMessage()));
     }
 
     @ExceptionHandler(AlreadyExistException.class)

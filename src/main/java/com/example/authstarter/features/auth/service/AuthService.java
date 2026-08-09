@@ -5,10 +5,9 @@ import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
-import com.example.authstarter.features.auth.dto.response.NameParts;
+import com.example.authstarter.features.auth.dto.response.NamePartsResponse;
 import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
-import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
@@ -86,10 +85,10 @@ public class AuthService {
     @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
-        NameParts names = authHelper.handleUsernameFromEmail(email);
+        NamePartsResponse names = authHelper.handleUsernameFromEmail(email);
         authHelper.handleUsedEmail(request.email());
 
-        User user = authMapper.toEntityFromAuth(request, names.firstName(), names.lastName());
+        User user = authMapper.toEntityFromAuthRequest(request, names.firstName(), names.lastName());
         user.setPassword(passwordEncoder.encode(request.password()));
         User newUser = userRepo.save(user);
 
