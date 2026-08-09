@@ -183,14 +183,18 @@ public class AuthService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        assert authentication != null;
-        var optionsRequest = new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication);
+        if (authentication != null){
+            var optionsRequest = new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication);
 
-        PublicKeyCredentialCreationOptions options =
-                relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
+            PublicKeyCredentialCreationOptions options =
+                    relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
 
-        creationOptionsRepository.save(request, response, options);
-        return PasskeyOptionsResponse.toResponse(options);
+            creationOptionsRepository.save(request, response, options);
+            return PasskeyOptionsResponse.toResponse(options);
+        }
+
+        throw new IllegalStateException("User not found in context holder");
+
     }
 
     public CredentialRecord finishPasskeyRegistration(
@@ -200,20 +204,23 @@ public class AuthService {
         PublicKeyCredentialCreationOptions options = creationOptionsRepository.load(servletRequest);
         RelyingPartyPublicKey publicKey = new RelyingPartyPublicKey(request.credential(), request.label());
 
-        assert options != null;
-        var registrationRequest = new ImmutableRelyingPartyRegistrationRequest(options, publicKey);
+        if (options != null){
+            var registrationRequest = new ImmutableRelyingPartyRegistrationRequest(options, publicKey);
 
-        CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
+            CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
-        User existingUser = authHelper.fetchUserFresh(principal.id());
-        authHelper.handleAuthProviders(existingUser, "PASSKEY");
+            User existingUser = authHelper.fetchUserFresh(principal.id());
+            authHelper.handleAuthProviders(existingUser, "PASSKEY");
 
-        eventPublisher.publishEvent(
-                AuditRequest.log(existingUser, AuditAction.PASSKEY_LINK,
-                        Map.of("message", "Passkey linked successfully")));
+            eventPublisher.publishEvent(
+                    AuditRequest.log(existingUser, AuditAction.PASSKEY_LINK,
+                            Map.of("message", "Passkey linked successfully")));
 
-        creationOptionsRepository.save(servletRequest, servletResponse, null);
-        return record;
+            creationOptionsRepository.save(servletRequest, servletResponse, null);
+            return record;
+        }
+
+        throw new IllegalStateException("Registration session missing or expired");
     }
 
     public PublicKeyCredentialRequestOptions startPasskeyAuthentication(
@@ -236,19 +243,23 @@ public class AuthService {
 
         PublicKeyCredentialRequestOptions options = requestOptionsRepository.load(servletRequest);
 
-        assert options != null;
-        var authenticationRequest = new RelyingPartyAuthenticationRequest(options, request.credential());
+        if (options != null){
+            var authenticationRequest = new RelyingPartyAuthenticationRequest(options, request.credential());
 
-        PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
-        UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
+            PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
+            UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
-        User user = authHelper.fetchUser(userId);
-        authHelper.handleLockedAccount(user);
-        authHelper.handleDeletedAccount(user);
-        authHelper.handleLockReset(user);
+            User user = authHelper.fetchUser(userId);
+            authHelper.handleLockedAccount(user);
+            authHelper.handleDeletedAccount(user);
+            authHelper.handleLockReset(user);
 
-        requestOptionsRepository.save(servletRequest, servletResponse, null);
-        return authHelper.createAuthResponse(jwtService, user, AuditAction.PASSKEY_LOGIN);
+            requestOptionsRepository.save(servletRequest, servletResponse, null);
+            return authHelper.createAuthResponse(jwtService, user, AuditAction.PASSKEY_LOGIN);
+        }
+
+        throw new IllegalStateException("Login session missing or expired");
+
     }
 
     public void deleteSavedPasskey(CustomUserPrincipal principal, String credentialId){
