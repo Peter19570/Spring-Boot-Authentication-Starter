@@ -99,6 +99,7 @@ example/
     │   │       └── AuthService.java
     │   ├── shared
     │   │   ├── config
+    │   │   │   ├── AppConfig.java
     │   │   │   └── SwaggerConfig.java
     │   │   ├── dto
     │   │   │   ├── ApiResponse.java
