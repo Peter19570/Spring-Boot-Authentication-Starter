@@ -8,7 +8,6 @@ import com.example.authstarter.features.audit.repo.AuditRepo;
 import com.example.authstarter.features.shared.dto.PageResponse;
 import com.example.authstarter.features.user.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;

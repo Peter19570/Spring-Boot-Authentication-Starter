@@ -6,6 +6,5 @@ import org.springframework.security.web.webauthn.api.PublicKeyCredential;
 public record PasskeyRegistrationRequest(
         String label,
         PublicKeyCredential<AuthenticatorAttestationResponse> credential
-
 ) {
 }

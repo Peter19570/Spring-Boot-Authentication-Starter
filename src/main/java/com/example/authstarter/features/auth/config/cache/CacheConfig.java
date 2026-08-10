@@ -3,6 +3,7 @@ package com.example.authstarter.features.auth.config.cache;
 import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.github.bucket4j.Bucket;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -14,6 +15,10 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 public class CacheConfig {
+
+    /**
+     * UTILISING JAVA MEMORY TO STORE CACHE, USE REDIS WHEN SCALING (HORIZONTALLY)
+     * */
 
     @Bean
     public CacheManager handleObjectCache() {
@@ -30,6 +35,14 @@ public class CacheConfig {
     public Cache<String, String> handleOtpCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(5))
+                .maximumSize(10_000)
+                .build();
+    }
+
+    @Bean
+    public Cache<String, Bucket> handleBucketCache() {
+        return Caffeine.newBuilder()
+                .expireAfterAccess(Duration.ofMinutes(10))
                 .maximumSize(10_000)
                 .build();
     }

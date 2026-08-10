@@ -8,13 +8,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.UUID;
+
+import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 
 @Component
 @RequiredArgsConstructor
@@ -33,15 +31,5 @@ public class VerificationEmail {
         verificationToken.setTokenHash(hashToken(rawToken));
         verificationToken.setExpiresAt(Instant.now().plus(Duration.ofDays(1)));
         emailVerificationTokenRepo.save(verificationToken);
-    }
-
-    private String hashToken(String rawToken) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256")
-                    .digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Hashing failed", e);
-        }
     }
 }

@@ -65,7 +65,7 @@ example/
     │   │   │   │   └── ResetPasswordRequest.java
     │   │   │   └── response
     │   │   │       ├── AuthResponse.java
-    │   │   │       ├── NameParts.java
+    │   │   │       ├── NamePartsResponse.java
     │   │   │       ├── PasskeyOptionsResponse.java
     │   │   │       └── TokenResponse.java
     │   │   ├── exceptions

@@ -4,7 +4,6 @@ import com.example.authstarter.features.auth.model.EmailVerificationToken;
 import com.example.authstarter.features.auth.model.PasswordResetToken;
 import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.shared.model.BaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

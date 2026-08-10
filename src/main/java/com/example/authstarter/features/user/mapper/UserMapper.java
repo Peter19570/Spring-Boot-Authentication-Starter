@@ -3,7 +3,6 @@ package com.example.authstarter.features.user.mapper;
 import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
 import com.example.authstarter.features.user.dto.response.UserResponse;
 import com.example.authstarter.features.user.model.User;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")

@@ -26,7 +26,6 @@ public class OtpService {
             boolean isValid = savedCode.equals(otpCode);
 
             if (isValid) {otpStore.invalidate(email);}
-
             return isValid;
         }
 
