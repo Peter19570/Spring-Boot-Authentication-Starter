@@ -1,6 +1,5 @@
 package com.example.authstarter.features.auth.config.ratelimit;
 
-import com.example.authstarter.features.auth.constants.RateLimitConstants;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -16,10 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.stream.Stream;
 
-import static com.example.authstarter.features.auth.constants.RateLimitConstants.MAX_ATTEMPTS;
-import static com.example.authstarter.features.auth.constants.RateLimitConstants.WINDOW;
+import static com.example.authstarter.features.auth.constants.RateLimitConstants.*;
 
 @Component
 @RequiredArgsConstructor
@@ -58,8 +56,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private boolean shouldRateLimit(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return Arrays.stream(RateLimitConstants.RATE_LIMITED_ENDPOINTS)
-                .anyMatch(path::startsWith);
+        return Stream.of(RATE_LIMITED_ENDPOINTS).anyMatch(path::startsWith);
     }
 
     private String getClientIdentifier(HttpServletRequest request) {
