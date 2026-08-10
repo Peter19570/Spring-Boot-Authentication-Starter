@@ -1,6 +1,7 @@
 package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,15 +23,17 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -92,7 +95,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // And this forr token in the cookie, for now I don't issue the token to the client via cookie
         if (request.getCookies() != null) {
-            return Arrays.stream(request.getCookies())
+            return Stream.of(request.getCookies())
                     .filter(cookie -> "accessToken".equals(cookie.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
@@ -105,6 +108,6 @@ public class JwtFilter extends OncePerRequestFilter {
     private void handleException(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("{\"error\": \"" + message + "\"}");
+        response.getWriter().write(objectMapper.writeValueAsString(Map.of("error", message)));
     }
 }
