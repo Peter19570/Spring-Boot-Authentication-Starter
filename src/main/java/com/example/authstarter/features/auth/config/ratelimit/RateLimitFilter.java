@@ -1,5 +1,6 @@
 package com.example.authstarter.features.auth.config.ratelimit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.example.authstarter.features.auth.constants.RateLimitConstants.*;
@@ -23,6 +25,7 @@ import static com.example.authstarter.features.auth.constants.RateLimitConstants
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
+    private final ObjectMapper objectMapper;
     private final Cache<String, Bucket> bucketStore;
 
     @Override
@@ -68,16 +71,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private void sendRateLimitResponse(HttpServletResponse response) throws IOException {
-        long retryAfter = WINDOW.toSeconds();
+        final long retryAfter = WINDOW.getSeconds();
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType("application/json");
         response.getWriter().write(
-                String.format(
-                        "{\"msg\":\"Too many attempts. Please try again in %d seconds\",\"retryAfter\":%d}",
-                        retryAfter,
-                        retryAfter
-                )
+                objectMapper.writeValueAsString(
+                        Map.of("message", "Too many requests", "retryAfter", retryAfter))
         );
     }
 }
