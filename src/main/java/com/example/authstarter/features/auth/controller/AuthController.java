@@ -146,7 +146,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Passkey Registration Initiated", response));
     }
 
-    @PostMapping("/passkeys/complete")
+    @PostMapping("/passkeys/register")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Complete passkey registration.")
     public ResponseEntity<ApiResponse<CredentialRecord>> finishPasskeyRegistration(
@@ -171,7 +171,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Passkey Challenge Sent Successfully", response));
     }
 
-    @PostMapping("/passkeys/verify")
+    @PostMapping("/passkeys/login")
     @Operation(summary = "Verify a passkey authentication challenge.")
     public ResponseEntity<ApiResponse<AuthResponse>> finishPasskeyAuthentication(
             HttpServletRequest servletRequest,
