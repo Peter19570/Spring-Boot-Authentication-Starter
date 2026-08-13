@@ -10,6 +10,6 @@ public interface UserMapper {
 
     UserResponse toDto(User user);
 
-    UserDetailsResponse toDetailsDto(User user);
+    UserDetailsResponse toDetailedDto(User user);
 
 }

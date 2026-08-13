@@ -45,7 +45,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserDetailsResponse getCurrentUser(UUID userId){
         User currentUser = authHelper.fetchUser(userId);
-        return userMapper.toDetailsDto(currentUser);
+        return userMapper.toDetailedDto(currentUser);
     }
 
     public void initiateDeletion(UUID userId) {
