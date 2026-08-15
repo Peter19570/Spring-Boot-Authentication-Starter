@@ -1,5 +1,6 @@
 package com.example.authstarter.features.auth.service.notification;
 
+import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ public class OtpService {
     public String generateOtp(String email) {
         String otpCode = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
-        otpStore.put(email, otpCode);
+        otpStore.put(email, AuthHelper.hashToken(otpCode));
         return otpCode;
     }
 
@@ -23,7 +24,7 @@ public class OtpService {
         String savedCode = otpStore.getIfPresent(email);
 
         if (savedCode != null){
-            boolean isValid = savedCode.equals(otpCode);
+            boolean isValid = savedCode.equals(AuthHelper.hashToken(otpCode));
 
             if (isValid) {otpStore.invalidate(email);}
             return isValid;
