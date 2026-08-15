@@ -2,7 +2,7 @@ package com.example.authstarter.features.user.dto.response;
 
 import java.util.UUID;
 
-public record UserDetailsResponse(
+public record UserDetailedResponse(
         UUID id,
         String email,
         String firstName,

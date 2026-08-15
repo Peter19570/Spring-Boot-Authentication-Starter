@@ -3,7 +3,7 @@ package com.example.authstarter.features.user.controller;
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
-import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
+import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,10 +22,10 @@ public class UserController {
 
     @GetMapping("/me")
     @Operation(summary = "Retrieve the authenticated user's profile.")
-    public ResponseEntity<ApiResponse<UserDetailsResponse>> getCurrentUser(
+    public ResponseEntity<ApiResponse<UserDetailedResponse>> getCurrentUser(
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        UserDetailsResponse response = userService.getCurrentUser(principal.id());
+        UserDetailedResponse response = userService.getCurrentUser(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Current User Information", response));
     }
 

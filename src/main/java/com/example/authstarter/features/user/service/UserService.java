@@ -11,7 +11,7 @@ import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.auth.service.notification.OtpService;
-import com.example.authstarter.features.user.dto.response.UserDetailsResponse;
+import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class UserService {
     private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @Transactional(readOnly = true)
-    public UserDetailsResponse getCurrentUser(UUID userId){
+    public UserDetailedResponse getCurrentUser(UUID userId){
         User currentUser = authHelper.fetchUser(userId);
         return userMapper.toDetailedDto(currentUser);
     }
