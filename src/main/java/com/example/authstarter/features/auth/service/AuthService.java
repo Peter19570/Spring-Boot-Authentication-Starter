@@ -123,20 +123,18 @@ public class AuthService {
         String token = request.refreshToken();
         String userId = jwtService.extractUserId(token);
 
+        if (!jwtService.extractTokenType(token).equals("rt")){
+            throw new IllegalStateException("Invalid token type. Refresh token required.");
+        }
+
         User user = authHelper.fetchUser(UUID.fromString(userId));
 
-        RefreshToken storedToken = refreshTokenRepo.findByTokenHash(token)
+        RefreshToken storedToken = refreshTokenRepo.findByTokenHash(hashToken(token))
                 .filter(refreshToken ->
                         !refreshToken.isRevoked() && refreshToken.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Refresh token is invalid or expired"));
 
-        if (!jwtService.extractTokenType(storedToken.getTokenHash()).equals("rt")){
-            throw new IllegalStateException("Invalid token type. Refresh token required.");
-        }
-
         storedToken.setRevoked(true);
-        refreshTokenRepo.save(storedToken);
-
         return authHelper.createTokenResponse(jwtService, user);
     }
 
@@ -384,9 +382,6 @@ public class AuthService {
 
         refreshTokenRepo.revokeAllByUserId(user.getId());
         token.setUsed(true);
-
-        userRepo.save(user);
-        passwordResetTokenRepo.save(token);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_RESET,
                 Map.of("message", "User reset password successfully")));

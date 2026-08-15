@@ -73,11 +73,11 @@ public class AuthHelper {
         String refresh = jwtService.generateRefreshToken(principal);
         long accessExpiration = jwtService.getAccessExpirationInSeconds();
 
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUser(user);
-        refreshToken.setTokenHash(refresh);
-        refreshToken.setExpiresAt(Instant.now().plusSeconds(60 * 60 * 24 * 7));
-        refreshTokenRepo.save(refreshToken);
+        RefreshToken rt = new RefreshToken();
+        rt.setUser(user);
+        rt.setTokenHash(hashToken(refresh));
+        rt.setExpiresAt(Instant.now().plusSeconds(60 * 60 * 24 * 7));
+        refreshTokenRepo.save(rt);
 
         return new TokenResponse(access, refresh, accessExpiration);
     }
