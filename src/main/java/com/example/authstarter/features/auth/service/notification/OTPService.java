@@ -3,13 +3,13 @@ package com.example.authstarter.features.auth.service.notification;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.*;
 
-@Service
+@Component
 @RequiredArgsConstructor
-public class OtpService {
+public class OTPService {
 
     private final Cache<String, String> otpStore;
 

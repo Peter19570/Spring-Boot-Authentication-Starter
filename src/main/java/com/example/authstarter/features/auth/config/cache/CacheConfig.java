@@ -21,7 +21,7 @@ public class CacheConfig {
      * */
 
     @Bean
-    public CacheManager handleObjectCache() {
+    public CacheManager handleDataCache() {
         CaffeineCacheManager manager = new CaffeineCacheManager(CacheConstants.CACHE_NAMES);
         manager.setCaffeine(
                 Caffeine.newBuilder()

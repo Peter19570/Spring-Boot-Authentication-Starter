@@ -4,13 +4,15 @@ import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
-import com.example.authstarter.features.auth.dto.response.NamePartsResponse;
+import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
+import com.example.authstarter.features.auth.model.EmailVerificationToken;
 import com.example.authstarter.features.auth.model.RefreshToken;
+import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.example.authstarter.features.user.mapper.UserMapper;
@@ -42,6 +44,7 @@ public class AuthHelper {
     private final AuthMapper authMapper;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "all-users", key = "#userId")
@@ -56,8 +59,8 @@ public class AuthHelper {
     }
 
     public AuthResponse createAuthResponse(JwtService jwtService, User user, AuditAction auditAction){
-        eventPublisher.publishEvent(AuditRequest.log(user, auditAction,
-                Map.of("message", "User logged in successfully")));
+        eventPublisher.publishEvent(AuditRequest.log(
+                user, auditAction, "User logged in successfully", Map.of()));
 
         return new AuthResponse(
                 true,
@@ -76,7 +79,7 @@ public class AuthHelper {
         RefreshToken rt = new RefreshToken();
         rt.setUser(user);
         rt.setTokenHash(hashToken(refresh));
-        rt.setExpiresAt(Instant.now().plusSeconds(60 * 60 * 24 * 7));
+        rt.setExpiresAt(Instant.now().plus(Duration.ofDays(7)));
         refreshTokenRepo.save(rt);
 
         return new TokenResponse(access, refresh, accessExpiration);
@@ -97,31 +100,33 @@ public class AuthHelper {
                 .orElseGet(() -> {
                     User user = authMapper.toEntityFromGooglePayload(payload);
 
-                    eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.REGISTER,
-                            Map.of("message", "User created account with Google login")));
+                    eventPublisher.publishEvent(AuditRequest.log(
+                            user, AuditAction.REGISTER,
+                            "User created account with Google login", Map.of()));
 
                     return userRepo.save(user);
                 });
 
-        handleLockedAccount(existingUser);
-        handleDeletedAccount(existingUser);
-        handleLockReset(existingUser);
+        processLockedAccount(existingUser);
+        validateAccountNotDeleted(existingUser);
+        resetAccountLock(existingUser);
 
         if (existingUser.getFirstName().equals("not-set")
                 || existingUser.getLastName().equals("not-set")){
             authMapper.updateEntityFromGooglePayload(payload, existingUser);
 
-            eventPublisher.publishEvent(AuditRequest.log(existingUser, AuditAction.SOCIAL_LINK,
-                    Map.of("message", "Google account linked successfully")));
+            eventPublisher.publishEvent(AuditRequest.log(
+                    existingUser, AuditAction.SOCIAL_LINK,
+                    "Google account linked successfully", Map.of()));
         }
 
-        handleAuthProviders(existingUser, "GOOGLE");
+        resolveAuthProviders(existingUser, "GOOGLE");
         userRepo.save(existingUser);
 
         return existingUser;
     }
 
-    public void handleAuthProviders(User user, String targetProvider){
+    public void resolveAuthProviders(User user, String targetProvider){
         String provider = user.getProvider();
 
         if (provider == null) {
@@ -131,30 +136,31 @@ public class AuthHelper {
         }
     }
 
-    public void handleLockedAccount(User user){
+    public void processLockedAccount(User user){
         if (user.isLocked()) {
-            if (user.getLockedUntil() != null && user.getLockedUntil().isBefore(Instant.now())) {
-                user.setLocked(false);
-                user.setFailedLoginAttempts(0);
-                user.setLockedUntil(null);
-            } else {
+            if (user.getLockedUntil() != null &&
+                    user.getLockedUntil().isBefore(Instant.now())) {
 
-                eventPublisher.publishEvent(new AuditRequest(user, AuditAction.LOGIN_FAILURE,
-                        Map.of("message", "Login failed")));
+                resetAccountLock(user);
+
+            } else {
+                eventPublisher.publishEvent(AuditRequest.log(
+                        user, AuditAction.LOGIN_FAILURE, "Login failed",
+                            Map.of("message", "User account locked temporarily")));
 
                 throw new AuthenticationException("Account is temporarily locked. Try again later.");
             }
         }
     }
 
-    public void handleDeletedAccount(User user){
+    public void validateAccountNotDeleted(User user){
         if (user.getDeletedAt() != null){
             throw new AuthenticationException("This account has been deleted.");
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void handleFailedLoginAttempt(User user){
+    public void processFailedLoginAttempt(User user){
         int newAttempts = user.getFailedLoginAttempts() + 1;
         user.setFailedLoginAttempts(newAttempts);
 
@@ -166,16 +172,17 @@ public class AuthHelper {
         userRepo.save(user);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGIN_ATTEMPT,
-                Map.of("message", "Failed login attempts: " + newAttempts)));
+                "User attempted login with incorrect password",
+                    Map.of("message", "Failed login attempts: " + newAttempts)));
     }
 
-    public void handleLockReset(User user){
+    public void resetAccountLock(User user){
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
         user.setLocked(false);
     }
 
-    public NamePartsResponse handleUsernameFromEmail(String email){
+    public NameParts extractUsernameFromEmail(String email){
         int atIndex = email.indexOf("@");
         String firstName = "not-set";
         String lastName = "not-set";
@@ -193,12 +200,25 @@ public class AuthHelper {
             }
         }
 
-        return NamePartsResponse.names(firstName, lastName);
+        return NameParts.names(firstName, lastName);
     }
 
-    public void handleUsedEmail(String email){
+    public void validateEmailNotRegistered(String email){
         if (userRepo.existsByEmail(email)) {
             throw new AlreadyExistException("Email already registered");
         }
+    }
+
+    public String generateEmailVerificationToken(User user, Instant exp, String newEmail){
+        String rawToken = UUID.randomUUID().toString();
+        EmailVerificationToken token = EmailVerificationToken.builder()
+                .user(user)
+                .tokenHash(hashToken(rawToken))
+                .newEmail(newEmail)
+                .expiresAt(exp)
+                .build();
+
+        emailVerificationTokenRepo.save(token);
+        return rawToken;
     }
 }

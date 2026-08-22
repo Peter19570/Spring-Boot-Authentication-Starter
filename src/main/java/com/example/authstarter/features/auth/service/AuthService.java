@@ -5,7 +5,7 @@ import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
-import com.example.authstarter.features.auth.dto.response.NamePartsResponse;
+import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
@@ -85,15 +85,19 @@ public class AuthService {
     @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
-        NamePartsResponse names = authHelper.handleUsernameFromEmail(email);
-        authHelper.handleUsedEmail(request.email());
+        Instant tokenExpire = Instant.now().plus(Duration.ofMinutes(30));
+
+        NameParts names = authHelper.extractUsernameFromEmail(email);
+
+        authHelper.validateEmailNotRegistered(email);
 
         User user = authMapper.toEntityFromAuthRequest(request, names.firstName(), names.lastName());
         user.setPassword(passwordEncoder.encode(request.password()));
         User newUser = userRepo.save(user);
 
-        // Listener will send email to user
-        eventPublisher.publishEvent(newUser);
+        String rawToken = authHelper.generateEmailVerificationToken(user, tokenExpire, null);
+        emailService.sendVerificationEmail(newUser, rawToken);
+
         return authHelper.createAuthResponse(jwtService, newUser, AuditAction.REGISTER);
     }
 
@@ -103,18 +107,18 @@ public class AuthService {
         User user = userRepo.findByEmail(request.email())
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        authHelper.handleDeletedAccount(user);
-        authHelper.handleLockedAccount(user);
+        authHelper.validateAccountNotDeleted(user);
+        authHelper.processLockedAccount(user);
 
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
-            authHelper.handleLockReset(user);
+            authHelper.resetAccountLock(user);
             return authHelper.createAuthResponse(jwtService, user, AuditAction.LOCAL_LOGIN);
 
         } catch (BadCredentialsException e) {
-            authHelper.handleFailedLoginAttempt(user);
+            authHelper.processFailedLoginAttempt(user);
             throw new AuthenticationException("Bad Credentials");
         }
     }
@@ -130,8 +134,7 @@ public class AuthService {
         User user = authHelper.fetchUser(UUID.fromString(userId));
 
         RefreshToken storedToken = refreshTokenRepo.findByTokenHash(hashToken(token))
-                .filter(refreshToken ->
-                        !refreshToken.isRevoked() && refreshToken.getExpiresAt().isAfter(Instant.now()))
+                .filter(rt -> !rt.isRevoked() && rt.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Refresh token is invalid or expired"));
 
         storedToken.setRevoked(true);
@@ -151,11 +154,9 @@ public class AuthService {
                 })
                 .orElse(false);
 
-        String message = (revoked) ? "User logout success" : "Logout attempted but token not found";
+        String message = (revoked) ? "User logout success" : "User logged out without token revoke";
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGOUT,
-                Map.of("message", message)
-        ));
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGOUT, message, Map.of()));
     }
 
     @CachePut(cacheNames = "users", key = "#result.userInfo.id")
@@ -208,11 +209,11 @@ public class AuthService {
             CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
             User existingUser = authHelper.fetchUserFresh(principal.id());
-            authHelper.handleAuthProviders(existingUser, "PASSKEY");
+            authHelper.resolveAuthProviders(existingUser, "PASSKEY");
 
             eventPublisher.publishEvent(
                     AuditRequest.log(existingUser, AuditAction.PASSKEY_LINK,
-                            Map.of("message", "Passkey linked successfully")));
+                            "Passkey linked successfully", Map.of()));
 
             creationOptionsRepository.save(servletRequest, servletResponse, null);
             return record;
@@ -248,9 +249,9 @@ public class AuthService {
             UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
             User user = authHelper.fetchUser(userId);
-            authHelper.handleLockedAccount(user);
-            authHelper.handleDeletedAccount(user);
-            authHelper.handleLockReset(user);
+            authHelper.processLockedAccount(user);
+            authHelper.validateAccountNotDeleted(user);
+            authHelper.resetAccountLock(user);
 
             requestOptionsRepository.save(servletRequest, servletResponse, null);
             return authHelper.createAuthResponse(jwtService, user, AuditAction.PASSKEY_LOGIN);
@@ -269,74 +270,66 @@ public class AuthService {
      */
 
     public void verifyEmail(String rawToken) {
-        String hashedToken = hashToken(rawToken);
-
-        EmailVerificationToken token = emailVerificationTokenRepo.findByTokenHash(hashedToken)
+        EmailVerificationToken token = emailVerificationTokenRepo.findByTokenHash(hashToken(rawToken))
                 .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(Instant.now()))
-                .orElseThrow(() -> new AuthenticationException("Invalid or expired verification token"));
+                .orElseThrow(() -> new NotFoundException("Invalid or expired token"));
 
         token.setUsed(true);
         User user = token.getUser();
         user.setEmailVerified(true);
 
-        userRepo.save(user);
-        emailVerificationTokenRepo.save(token);
+        emailVerificationTokenRepo.delete(token);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_VERIFIED,
-                Map.of("message", "Email verified successfully")));
+                "Email verified successfully", Map.of()));
     }
 
     public void resendVerificationEmail(CustomUserPrincipal principal){
         User user = authHelper.fetchUser(principal.id());
+
         boolean isEmailVerified = user.isEmailVerified();
+        Instant expire = Instant.now().plus(Duration.ofMinutes(10));
 
         if (isEmailVerified){
             throw new IllegalStateException("Email has been verified already");
         }
 
-        // Listener will pick the obj and send the mail
-        eventPublisher.publishEvent(user);
+        String rawToken = authHelper.generateEmailVerificationToken(user, expire, null);
+        emailService.sendVerificationEmail(user, rawToken);
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
         User user = authHelper.fetchUser(userId);
 
+        String newEmail = request.newEmail();
+        Instant expire = Instant.now().plus(Duration.ofMinutes(30));
+
         if (user.getPassword() == null) {
-            throw new ValidationException("Cannot reset email with empty password");
+            throw new IllegalStateException("Cannot reset email with empty password");
         }
 
-        authHelper.handleUsedEmail(request.newEmail());
+        authHelper.validateEmailNotRegistered(newEmail);
 
-        String token = UUID.randomUUID().toString();
-        EmailVerificationToken emailVerificationToken = new EmailVerificationToken();
-        emailVerificationToken.setTokenHash(token);
-        emailVerificationToken.setNewEmail(request.newEmail()); // Store the pending email in the token record
-        emailVerificationToken.setUser(user);
-        emailVerificationToken.setExpiresAt(Instant.now().plus(Duration.ofHours(2)));
-        emailVerificationTokenRepo.save(emailVerificationToken);
-
-        emailService.sendEmailChangeConfirmation(request.newEmail(), token);
+        String rawToken = authHelper.generateEmailVerificationToken(user, expire, newEmail);
+        emailService.sendEmailChangeConfirmation(newEmail, rawToken);
     }
 
-    public void confirmEmailChange(String token) {
-        EmailVerificationToken emailVerificationToken = emailVerificationTokenRepo.findByTokenHash(token)
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    public void confirmEmailChange(String rawToken) {
+        EmailVerificationToken token = emailVerificationTokenRepo.findByTokenHash(hashToken(rawToken))
+                .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Invalid or expired token"));
 
-        if (emailVerificationToken.getExpiresAt().isBefore(Instant.now())) {
-            emailVerificationTokenRepo.delete(emailVerificationToken);
-            throw new AuthenticationException("Token has expired");
-        }
-
-        User user = emailVerificationToken.getUser();
+        User user = token.getUser();
         String oldEmail = user.getEmail();
-        String newEmail = emailVerificationToken.getNewEmail();
+        String newEmail = token.getNewEmail();
 
         user.setEmail(newEmail);
-        emailVerificationTokenRepo.delete(emailVerificationToken);
+        emailVerificationTokenRepo.delete(token);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_CHANGE_CONFIRM,
-                Map.of("message", "User successfully changed email from " +
-                        oldEmail + " to " + newEmail)));
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_CHANGED,
+                "User has changed email", Map.of(
+                        "old email", oldEmail, "new email", newEmail)));
     }
 
     /**
@@ -356,21 +349,17 @@ public class AuthService {
         }
 
         String rawToken = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = new PasswordResetToken();
-        resetToken.setUser(user);
-        resetToken.setTokenHash(hashToken(rawToken));
-        resetToken.setExpiresAt(Instant.now().plus(Duration.ofMinutes(15)));
-        passwordResetTokenRepo.save(resetToken);
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(user);
+        token.setTokenHash(hashToken(rawToken));
+        token.setExpiresAt(Instant.now().plus(Duration.ofMinutes(15)));
+        passwordResetTokenRepo.save(token);
 
         emailService.sendPasswordResetEmail(user, rawToken);
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_REQUEST,
-                Map.of("message", "Password change requested for user")));
     }
 
     public void resetPassword(String rawToken, String newPassword) {
-        String hashedToken = hashToken(rawToken);
-
-        PasswordResetToken token = passwordResetTokenRepo.findByTokenHash(hashedToken)
+        PasswordResetToken token = passwordResetTokenRepo.findByTokenHash(hashToken(rawToken))
                 .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Invalid or expired reset token"));
 
@@ -380,11 +369,10 @@ public class AuthService {
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
 
-        refreshTokenRepo.revokeAllByUserId(user.getId());
-        token.setUsed(true);
+        passwordResetTokenRepo.delete(token);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_RESET,
-                Map.of("message", "User reset password successfully")));
+                "User reset password successfully", Map.of()));
     }
 
 }

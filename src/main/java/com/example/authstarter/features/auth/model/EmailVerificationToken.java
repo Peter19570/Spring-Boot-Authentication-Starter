@@ -2,9 +2,7 @@ package com.example.authstarter.features.auth.model;
 
 import com.example.authstarter.features.user.model.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -14,7 +12,9 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "email_verification_tokens")
 @EntityListeners(AuditingEntityListener.class)
 public class EmailVerificationToken{

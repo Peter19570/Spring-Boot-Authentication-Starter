@@ -32,6 +32,9 @@ public class AuditLog extends BaseEntity {
     @Column(nullable = false)
     private AuditAction action;
 
+    @Column(nullable = false, length = 350)
+    private String description;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> metadata;

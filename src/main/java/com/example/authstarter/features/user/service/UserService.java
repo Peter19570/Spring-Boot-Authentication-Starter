@@ -10,7 +10,7 @@ import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.notification.EmailService;
-import com.example.authstarter.features.auth.service.notification.OtpService;
+import com.example.authstarter.features.auth.service.notification.OTPService;
 import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
@@ -33,7 +33,7 @@ public class UserService {
 
     private final AuthHelper authHelper;
     private final UserMapper userMapper;
-    private final OtpService otpService;
+    private final OTPService otpService;
     private final PasskeyRepo passkeyRepo;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -65,7 +65,9 @@ public class UserService {
         }
 
         if (!otpService.validateOtp(
-                currentUser.getEmail(), request.otp().replaceAll("\\s+", ""))) {
+                currentUser.getEmail(),
+                request.otp().replaceAll("\\s+", ""))
+        ) {
             throw new ValidationException("Invalid or expired deletion code.");
         }
 
@@ -76,6 +78,6 @@ public class UserService {
         passkeyRepo.deleteAllByUserId(currentUser.getId());
 
         eventPublisher.publishEvent(AuditRequest.log(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
-                Map.of("message", "User has been soft deleted")));
+                "User account has been soft deleted", Map.of()));
     }
 }

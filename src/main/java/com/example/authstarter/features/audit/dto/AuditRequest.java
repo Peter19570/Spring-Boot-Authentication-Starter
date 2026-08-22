@@ -8,12 +8,14 @@ import java.util.Map;
 public record AuditRequest(
         User user,
         AuditAction auditAction,
+        String description,
         Map<String, Object> metaData
 ) {
     public static AuditRequest log(
             User user,
             AuditAction auditAction,
+            String description,
             Map<String, Object> metaData){
-        return new AuditRequest(user, auditAction, metaData);
+        return new AuditRequest(user, auditAction, description, metaData);
     }
 }
