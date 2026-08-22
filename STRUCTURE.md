@@ -12,8 +12,6 @@ example/
     │   │   │   └── AuditResponse.java
     │   │   ├── enums
     │   │   │   └── AuditAction.java
-    │   │   ├── listeners
-    │   │   │   └── AuditListener.java
     │   │   ├── mapper
     │   │   │   └── AuditMapper.java
     │   │   ├── model
@@ -53,6 +51,8 @@ example/
     │   │   ├── controller
     │   │   │   └── AuthController.java
     │   │   ├── dto
+    │   │   │   ├── internal
+    │   │   │   │   └── NameParts.java
     │   │   │   ├── request
     │   │   │   │   ├── AccountDeletionRequest.java
     │   │   │   │   ├── AuthRequest.java
@@ -65,7 +65,6 @@ example/
     │   │   │   │   └── ResetPasswordRequest.java
     │   │   │   └── response
     │   │   │       ├── AuthResponse.java
-    │   │   │       ├── NamePartsResponse.java
     │   │   │       ├── PasskeyOptionsResponse.java
     │   │   │       └── TokenResponse.java
     │   │   ├── exceptions
@@ -74,9 +73,6 @@ example/
     │   │   │   ├── MessageException.java
     │   │   │   ├── NotFoundException.java
     │   │   │   └── ValidationException.java
-    │   │   ├── listeners
-    │   │   │   └── email
-    │   │   │       └── VerificationEmail.java
     │   │   ├── mapper
     │   │   │   ├── AuthMapper.java
     │   │   │   └── PasskeyMapper.java
@@ -95,7 +91,7 @@ example/
     │   │       │   └── AuthHelper.java
     │   │       ├── notification
     │   │       │   ├── EmailService.java
-    │   │       │   └── OtpService.java
+    │   │       │   └── OTPService.java
     │   │       └── AuthService.java
     │   ├── shared
     │   │   ├── config
@@ -112,7 +108,7 @@ example/
     │       │   └── UserController.java
     │       ├── dto
     │       │   └── response
-    │       │       ├── UserDetailsResponse.java
+    │       │       ├── UserDetailedResponse.java
     │       │       └── UserResponse.java
     │       ├── mapper
     │       │   └── UserMapper.java
