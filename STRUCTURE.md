@@ -52,7 +52,8 @@ example/
     │   │   │   └── AuthController.java
     │   │   ├── dto
     │   │   │   ├── internal
-    │   │   │   │   └── NameParts.java
+    │   │   │   │   ├── NameParts.java
+    │   │   │   │   └── Verification.java
     │   │   │   ├── request
     │   │   │   │   ├── AccountDeletionRequest.java
     │   │   │   │   ├── AuthRequest.java
@@ -62,7 +63,8 @@ example/
     │   │   │   │   ├── PasskeyLoginRequest.java
     │   │   │   │   ├── PasskeyRegistrationRequest.java
     │   │   │   │   ├── RefreshTokenRequest.java
-    │   │   │   │   └── ResetPasswordRequest.java
+    │   │   │   │   ├── ResetPasswordRequest.java
+    │   │   │   │   └── VerificationTokenRequest.java
     │   │   │   └── response
     │   │   │       ├── AuthResponse.java
     │   │   │       ├── PasskeyOptionsResponse.java
@@ -77,21 +79,20 @@ example/
     │   │   │   ├── AuthMapper.java
     │   │   │   └── PasskeyMapper.java
     │   │   ├── model
-    │   │   │   ├── EmailVerificationToken.java
     │   │   │   ├── Passkey.java
-    │   │   │   ├── PasswordResetToken.java
     │   │   │   └── RefreshToken.java
     │   │   ├── repo
-    │   │   │   ├── EmailVerificationTokenRepo.java
     │   │   │   ├── PasskeyRepo.java
-    │   │   │   ├── PasswordResetTokenRepo.java
     │   │   │   └── RefreshTokenRepo.java
     │   │   └── service
     │   │       ├── helpers
     │   │       │   └── AuthHelper.java
+    │   │       ├── memory
+    │   │       │   ├── EVTService.java
+    │   │       │   ├── OTPService.java
+    │   │       │   └── PRTService.java
     │   │       ├── notification
-    │   │       │   ├── EmailService.java
-    │   │       │   └── OTPService.java
+    │   │       │   └── EmailService.java
     │   │       └── AuthService.java
     │   ├── shared
     │   │   ├── config
