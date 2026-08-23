@@ -10,9 +10,7 @@ import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
-import com.example.authstarter.features.auth.model.EmailVerificationToken;
 import com.example.authstarter.features.auth.model.RefreshToken;
-import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.example.authstarter.features.user.mapper.UserMapper;
@@ -44,7 +42,6 @@ public class AuthHelper {
     private final AuthMapper authMapper;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
-    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "all-users", key = "#userId")
@@ -207,18 +204,5 @@ public class AuthHelper {
         if (userRepo.existsByEmail(email)) {
             throw new AlreadyExistException("Email already registered");
         }
-    }
-
-    public String generateEmailVerificationToken(User user, Instant exp, String newEmail){
-        String rawToken = UUID.randomUUID().toString();
-        EmailVerificationToken token = EmailVerificationToken.builder()
-                .user(user)
-                .tokenHash(hashToken(rawToken))
-                .newEmail(newEmail)
-                .expiresAt(exp)
-                .build();
-
-        emailVerificationTokenRepo.save(token);
-        return rawToken;
     }
 }

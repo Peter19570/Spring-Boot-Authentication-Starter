@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 public record ResetPasswordRequest(
         @NotNull(message = "Reset password token is required")
         @NotBlank(message = "Reset password token cannot be empty")
-        String token,
+        String resetToken,
 
         @NotBlank(message = "New password is required")
         @Size(min = 6, message = "New password should be greater than 6 chars")

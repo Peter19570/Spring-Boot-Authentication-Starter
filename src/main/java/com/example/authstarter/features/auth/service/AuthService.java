@@ -3,6 +3,7 @@ package com.example.authstarter.features.auth.service;
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
+import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
 import com.example.authstarter.features.auth.dto.internal.NameParts;
@@ -12,16 +13,13 @@ import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
-import com.example.authstarter.features.auth.model.EmailVerificationToken;
-import com.example.authstarter.features.auth.model.PasswordResetToken;
 import com.example.authstarter.features.auth.model.RefreshToken;
-import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
-import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
+import com.example.authstarter.features.auth.service.memory.EVTService;
+import com.example.authstarter.features.auth.service.memory.PRTService;
 import com.example.authstarter.features.auth.service.notification.EmailService;
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -48,7 +46,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -64,6 +61,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthMapper authMapper;
     private final AuthHelper authHelper;
+    private final EVTService evtService;
+    private final PRTService prtService;
     private final PasskeyRepo passkeyRepo;
     private final EmailService emailService;
     private final GoogleIdTokenVerifier verifier;
@@ -71,11 +70,10 @@ public class AuthService {
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
     private final AuthenticationManager authenticationManager;
-    private final PasswordResetTokenRepo passwordResetTokenRepo;
-    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
     private final WebAuthnRelyingPartyOperations relyingPartyOperations;
     private final PublicKeyCredentialRequestOptionsRepository requestOptionsRepository;
     private final PublicKeyCredentialCreationOptionsRepository creationOptionsRepository;
+
 
     /**
      * MAJOR AUTHENTICATION METHODS HERE
@@ -85,20 +83,18 @@ public class AuthService {
     @CacheEvict(cacheNames = "all-users", allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
-        Instant tokenExpire = Instant.now().plus(Duration.ofMinutes(30));
 
         NameParts names = authHelper.extractUsernameFromEmail(email);
-
         authHelper.validateEmailNotRegistered(email);
 
         User user = authMapper.toEntityFromAuthRequest(request, names.firstName(), names.lastName());
         user.setPassword(passwordEncoder.encode(request.password()));
-        User newUser = userRepo.save(user);
+        User savedUser = userRepo.save(user);
 
-        String rawToken = authHelper.generateEmailVerificationToken(user, tokenExpire, null);
-        emailService.sendVerificationEmail(newUser, rawToken);
+        String rawToken = evtService.generateEVT(savedUser.getId().toString(), null);
+        emailService.sendVerificationEmail(savedUser, rawToken);
 
-        return authHelper.createAuthResponse(jwtService, newUser, AuditAction.REGISTER);
+        return authHelper.createAuthResponse(jwtService, savedUser, AuditAction.REGISTER);
     }
 
     @CachePut(cacheNames = "users", key = "#result.userInfo.id")
@@ -198,7 +194,7 @@ public class AuthService {
 
     public CredentialRecord finishPasskeyRegistration(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
-            PasskeyRegistrationRequest request, CustomUserPrincipal principal) {
+            PasskeyRegistrationRequest request, UUID userId) {
 
         PublicKeyCredentialCreationOptions options = creationOptionsRepository.load(servletRequest);
         RelyingPartyPublicKey publicKey = new RelyingPartyPublicKey(request.credential(), request.label());
@@ -208,7 +204,7 @@ public class AuthService {
 
             CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
-            User existingUser = authHelper.fetchUserFresh(principal.id());
+            User existingUser = authHelper.fetchUserFresh(userId);
             authHelper.resolveAuthProviders(existingUser, "PASSKEY");
 
             eventPublisher.publishEvent(
@@ -261,48 +257,38 @@ public class AuthService {
 
     }
 
-    public void deleteSavedPasskey(CustomUserPrincipal principal, String credentialId){
-        passkeyRepo.deleteByCredentialIdAndUserId(credentialId, principal.id());
+    public void deleteSavedPasskey(UUID userId, String credentialId){
+        passkeyRepo.deleteByCredentialIdAndUserId(credentialId, userId);
     }
 
     /**
      * EMAIL RELATED METHODS HERE
      */
 
-    public void verifyEmail(String rawToken) {
-        EmailVerificationToken token = emailVerificationTokenRepo.findByTokenHash(hashToken(rawToken))
-                .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(Instant.now()))
-                .orElseThrow(() -> new NotFoundException("Invalid or expired token"));
+    public void verifyEmail(VerificationTokenRequest request) {
+        Verification verification = evtService.validateEVT(request.token());
 
-        token.setUsed(true);
-        User user = token.getUser();
+        User user = authHelper.fetchUser(UUID.fromString(verification.userId()));
         user.setEmailVerified(true);
-
-        emailVerificationTokenRepo.delete(token);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_VERIFIED,
                 "Email verified successfully", Map.of()));
     }
 
-    public void resendVerificationEmail(CustomUserPrincipal principal){
-        User user = authHelper.fetchUser(principal.id());
+    public void resendVerificationEmail(UUID userId){
+        User user = authHelper.fetchUser(userId);
 
-        boolean isEmailVerified = user.isEmailVerified();
-        Instant expire = Instant.now().plus(Duration.ofMinutes(10));
-
-        if (isEmailVerified){
+        if (user.isEmailVerified()){
             throw new IllegalStateException("Email has been verified already");
         }
 
-        String rawToken = authHelper.generateEmailVerificationToken(user, expire, null);
+        String rawToken = evtService.generateEVT(user.getId().toString(), null);
         emailService.sendVerificationEmail(user, rawToken);
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
         User user = authHelper.fetchUser(userId);
-
         String newEmail = request.newEmail();
-        Instant expire = Instant.now().plus(Duration.ofMinutes(30));
 
         if (user.getPassword() == null) {
             throw new IllegalStateException("Cannot reset email with empty password");
@@ -310,22 +296,19 @@ public class AuthService {
 
         authHelper.validateEmailNotRegistered(newEmail);
 
-        String rawToken = authHelper.generateEmailVerificationToken(user, expire, newEmail);
+        String rawToken = evtService.generateEVT(user.getId().toString(), newEmail);
         emailService.sendEmailChangeConfirmation(newEmail, rawToken);
     }
 
     @CacheEvict(cacheNames = "all-users", allEntries = true)
-    public void confirmEmailChange(String rawToken) {
-        EmailVerificationToken token = emailVerificationTokenRepo.findByTokenHash(hashToken(rawToken))
-                .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(Instant.now()))
-                .orElseThrow(() -> new NotFoundException("Invalid or expired token"));
+    public void confirmEmailChange(VerificationTokenRequest request) {
+        Verification verification = evtService.validateEVT(request.token());
+        User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));
 
-        User user = token.getUser();
         String oldEmail = user.getEmail();
-        String newEmail = token.getNewEmail();
+        String newEmail = verification.newEmail();
 
         user.setEmail(newEmail);
-        emailVerificationTokenRepo.delete(token);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_CHANGED,
                 "User has changed email", Map.of(
@@ -348,28 +331,18 @@ public class AuthService {
             throw new IllegalStateException("Cannot request password-reset for non-local account");
         }
 
-        String rawToken = UUID.randomUUID().toString();
-        PasswordResetToken token = new PasswordResetToken();
-        token.setUser(user);
-        token.setTokenHash(hashToken(rawToken));
-        token.setExpiresAt(Instant.now().plus(Duration.ofMinutes(15)));
-        passwordResetTokenRepo.save(token);
-
+        String rawToken = prtService.generatePRT(user.getId().toString());
         emailService.sendPasswordResetEmail(user, rawToken);
     }
 
-    public void resetPassword(String rawToken, String newPassword) {
-        PasswordResetToken token = passwordResetTokenRepo.findByTokenHash(hashToken(rawToken))
-                .filter(t -> !t.isUsed() && t.getExpiresAt().isAfter(Instant.now()))
-                .orElseThrow(() -> new NotFoundException("Invalid or expired reset token"));
+    public void resetPassword(ResetPasswordRequest request) {
+        String userId = prtService.validatePRT(request.resetToken());
 
-        User user = token.getUser();
-        user.setPassword(passwordEncoder.encode(newPassword));
+        User user = authHelper.fetchUserFresh(UUID.fromString(userId));
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
         user.setLocked(false);
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
-
-        passwordResetTokenRepo.delete(token);
 
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_RESET,
                 "User reset password successfully", Map.of()));

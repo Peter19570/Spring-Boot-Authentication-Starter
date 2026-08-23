@@ -1,7 +1,5 @@
 package com.example.authstarter.features.user.model;
 
-import com.example.authstarter.features.auth.model.EmailVerificationToken;
-import com.example.authstarter.features.auth.model.PasswordResetToken;
 import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.shared.model.BaseEntity;
 import jakarta.persistence.*;
@@ -42,12 +40,6 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshToken> refreshTokens = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EmailVerificationToken> emailVerificationTokens = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PasswordResetToken> passwordResetTokens = new ArrayList<>();
 
     // Add roles here
 

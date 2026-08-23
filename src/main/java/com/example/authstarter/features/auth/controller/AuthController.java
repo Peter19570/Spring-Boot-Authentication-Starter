@@ -48,7 +48,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Authenticate a user.")
+    @Operation(summary = "Authenticate user.")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody AuthRequest request
     ) {
@@ -67,7 +67,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Log out the authenticated user.")
+    @Operation(summary = "Log out authenticated user.")
     public ResponseEntity<Void> logout(
             @Valid @RequestBody RefreshTokenRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal
@@ -77,7 +77,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Refresh an expired access token.")
+    @Operation(summary = "Refresh expired access token.")
     public ResponseEntity<ApiResponse<TokenResponse>> refresh(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
@@ -90,28 +90,27 @@ public class AuthController {
      */
 
     @GetMapping("/verify-email")
-    @Operation(summary = "Verify a user's email address.")
+    @Operation(summary = "Verify user's email address.")
     public ResponseEntity<Void> verifyEmail(
-            @RequestParam
-            @NotNull(message = "Email verification token is required") String token
+            @ModelAttribute VerificationTokenRequest request
     ) {
-        authService.verifyEmail(token);
+        authService.verifyEmail(request);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/resend-verification-email")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Resend email verification.")
+    @Operation(summary = "Resend email verification token.")
     public ResponseEntity<Void> resendVerificationEmail(
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        authService.resendVerificationEmail(principal);
+        authService.resendVerificationEmail(principal.id());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/change-email")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Change the user's email address.")
+    @Operation(summary = "Request verification token to change email")
     public ResponseEntity<Void> requestChange(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody @Valid EmailChangeRequest request
@@ -121,12 +120,11 @@ public class AuthController {
     }
 
     @GetMapping("/confirm-email")
-    @Operation(summary = "Confirm a user's email address.")
+    @Operation(summary = "Verify and change email")
     public ResponseEntity<Void> confirmChange(
-            @RequestParam
-            @NotNull(message = "Email verification token is required") String token
+            @ModelAttribute VerificationTokenRequest request
     ) {
-        authService.confirmEmailChange(token);
+        authService.confirmEmailChange(request);
         return ResponseEntity.noContent().build();
     }
 
@@ -156,12 +154,12 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         CredentialRecord response = authService.finishPasskeyRegistration(
-                servletRequest, servletResponse, request, principal);
+                servletRequest, servletResponse, request, principal.id());
         return ResponseEntity.ok(ApiResponse.success("Public Key Saved", response));
     }
 
     @PostMapping("/passkeys/challenge")
-    @Operation(summary = "Generate a passkey authentication challenge.")
+    @Operation(summary = "Generate passkey authentication challenge.")
     public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication(
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse
@@ -190,7 +188,7 @@ public class AuthController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @PathVariable String credentialId
     ) {
-        authService.deleteSavedPasskey(principal, credentialId);
+        authService.deleteSavedPasskey(principal.id(), credentialId);
         return ResponseEntity.noContent().build();
     }
 
@@ -208,11 +206,11 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Reset a user's password using a valid password reset token.")
+    @Operation(summary = "Reset user's password using their password and otp.")
     public ResponseEntity<Void> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request
     ) {
-        authService.resetPassword(request.token(), request.newPassword());
+        authService.resetPassword(request);
         return ResponseEntity.noContent().build();
     }
 }

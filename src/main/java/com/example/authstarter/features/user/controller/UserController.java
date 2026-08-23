@@ -39,7 +39,7 @@ public class UserController {
     }
 
     @DeleteMapping("/me")
-    @Operation(summary = "Delete the authenticated user's account.")
+    @Operation(summary = "Delete authenticated user's account.")
     public ResponseEntity<Void> confirmDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @RequestBody AccountDeletionRequest request

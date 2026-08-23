@@ -1,6 +1,7 @@
 package com.example.authstarter.features.auth.config.cache;
 
 import com.example.authstarter.features.auth.constants.CacheConstants;
+import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bucket;
@@ -21,7 +22,7 @@ public class CacheConfig {
      * */
 
     @Bean
-    public CacheManager handleDataCache() {
+    public CacheManager dataStore() {
         CaffeineCacheManager manager = new CaffeineCacheManager(CacheConstants.CACHE_NAMES);
         manager.setCaffeine(
                 Caffeine.newBuilder()
@@ -32,7 +33,23 @@ public class CacheConfig {
     }
 
     @Bean
-    public Cache<String, String> handleOtpCache() {
+    public Cache<String, Verification> evtStore(){
+        return Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(20))
+                .maximumSize(10_000)
+                .build();
+    }
+
+    @Bean
+    public Cache<String, String> prtStore(){
+        return Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(10))
+                .maximumSize(10_100)
+                .build();
+    }
+
+    @Bean
+    public Cache<String, String> otpStore() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(5))
                 .maximumSize(10_000)
@@ -40,7 +57,7 @@ public class CacheConfig {
     }
 
     @Bean
-    public Cache<String, Bucket> handleBucketCache() {
+    public Cache<String, Bucket> bucketStore() {
         return Caffeine.newBuilder()
                 .expireAfterAccess(Duration.ofMinutes(10))
                 .maximumSize(10_000)

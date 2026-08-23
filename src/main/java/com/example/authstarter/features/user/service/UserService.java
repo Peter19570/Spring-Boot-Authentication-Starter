@@ -3,14 +3,11 @@ package com.example.authstarter.features.user.service;
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
-import com.example.authstarter.features.auth.exceptions.ValidationException;
-import com.example.authstarter.features.auth.repo.EmailVerificationTokenRepo;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
-import com.example.authstarter.features.auth.repo.PasswordResetTokenRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.notification.EmailService;
-import com.example.authstarter.features.auth.service.notification.OTPService;
+import com.example.authstarter.features.auth.service.memory.OTPService;
 import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
@@ -39,8 +36,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
-    private final PasswordResetTokenRepo passwordResetTokenRepo;
-    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
 
     @Transactional(readOnly = true)
     public UserDetailedResponse getCurrentUser(UUID userId){
@@ -50,7 +45,7 @@ public class UserService {
 
     public void initiateDeletion(UUID userId) {
         User currentUser = authHelper.fetchUser(userId);
-        String code = otpService.generateOtp(currentUser.getEmail());
+        String code = otpService.generateOtp(currentUser.getId().toString());
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
@@ -64,17 +59,11 @@ public class UserService {
             }
         }
 
-        if (!otpService.validateOtp(
-                currentUser.getEmail(),
-                request.otp().replaceAll("\\s+", ""))
-        ) {
-            throw new ValidationException("Invalid or expired deletion code.");
-        }
+        otpService.validateOtp(currentUser.getId().toString(),
+                request.otp().replaceAll("\\s+", ""));
 
         currentUser.setDeletedAt(Instant.now());
         refreshTokenRepo.deleteAllByUserId(currentUser.getId());
-        passwordResetTokenRepo.deleteAllByUserId(currentUser.getId());
-        emailVerificationTokenRepo.deleteAllByUserId(currentUser.getId());
         passkeyRepo.deleteAllByUserId(currentUser.getId());
 
         eventPublisher.publishEvent(AuditRequest.log(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
