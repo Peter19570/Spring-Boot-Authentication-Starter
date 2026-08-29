@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +58,7 @@ public class AuthController {
     @PostMapping("/google")
     @Operation(summary = "Authenticate with Google.")
     public ResponseEntity<ApiResponse<AuthResponse>> google(
-            @RequestBody @Valid GoogleRequest request)
+            @Valid @RequestBody GoogleRequest request)
             throws GeneralSecurityException, IOException {
         AuthResponse response = authService.googleLogin(request);
         return ResponseEntity.ok(ApiResponse.success("Google login success", response));
@@ -92,7 +91,7 @@ public class AuthController {
     @GetMapping("/verify-email")
     @Operation(summary = "Verify user's email address.")
     public ResponseEntity<Void> verifyEmail(
-            @ModelAttribute VerificationTokenRequest request
+            @Valid @RequestBody VerificationTokenRequest request
     ) {
         authService.verifyEmail(request);
         return ResponseEntity.noContent().build();
@@ -113,7 +112,7 @@ public class AuthController {
     @Operation(summary = "Request verification token to change email")
     public ResponseEntity<Void> requestChange(
             @AuthenticationPrincipal CustomUserPrincipal principal,
-            @RequestBody @Valid EmailChangeRequest request
+            @Valid @RequestBody EmailChangeRequest request
     ) {
         authService.requestEmailChange(principal.id(), request);
         return ResponseEntity.noContent().build();
@@ -122,7 +121,7 @@ public class AuthController {
     @GetMapping("/confirm-email")
     @Operation(summary = "Verify and change email")
     public ResponseEntity<Void> confirmChange(
-            @ModelAttribute VerificationTokenRequest request
+            @Valid @RequestBody VerificationTokenRequest request
     ) {
         authService.confirmEmailChange(request);
         return ResponseEntity.noContent().build();
@@ -136,8 +135,7 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Initialize passkey registration.")
     public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> startPasskeyRegistration(
-            HttpServletRequest servletRequest,
-            HttpServletResponse servletResponse
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse
     ) {
         PasskeyOptionsResponse response = authService.startPasskeyRegistration(
                 servletRequest, servletResponse);
@@ -148,8 +146,7 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Complete passkey registration.")
     public ResponseEntity<ApiResponse<CredentialRecord>> finishPasskeyRegistration(
-            HttpServletRequest servletRequest,
-            HttpServletResponse servletResponse,
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             @RequestBody PasskeyRegistrationRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
@@ -161,8 +158,7 @@ public class AuthController {
     @PostMapping("/passkeys/challenge")
     @Operation(summary = "Generate passkey authentication challenge.")
     public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication(
-            HttpServletRequest servletRequest,
-            HttpServletResponse servletResponse
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse
     ) {
         PublicKeyCredentialRequestOptions response = authService.startPasskeyAuthentication(
                 servletRequest, servletResponse);
@@ -172,8 +168,7 @@ public class AuthController {
     @PostMapping("/passkeys/login")
     @Operation(summary = "Verify a passkey authentication challenge.")
     public ResponseEntity<ApiResponse<AuthResponse>> finishPasskeyAuthentication(
-            HttpServletRequest servletRequest,
-            HttpServletResponse servletResponse,
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             @RequestBody PasskeyLoginRequest request
     ) {
         AuthResponse response = authService.finishPasskeyAuthentication(

@@ -7,6 +7,7 @@ import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,7 +43,7 @@ public class UserController {
     @Operation(summary = "Delete authenticated user's account.")
     public ResponseEntity<Void> confirmDelete(
             @AuthenticationPrincipal CustomUserPrincipal principal,
-            @RequestBody AccountDeletionRequest request
+            @Valid @RequestBody AccountDeletionRequest request
     ) {
         userService.confirmSoftDelete(principal.id(), request);
         return ResponseEntity.noContent().build();
