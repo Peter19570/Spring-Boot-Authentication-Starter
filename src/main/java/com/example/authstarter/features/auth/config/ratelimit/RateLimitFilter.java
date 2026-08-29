@@ -2,9 +2,8 @@ package com.example.authstarter.features.auth.config.ratelimit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
+import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,31 +34,36 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        if (!shouldRateLimit(request)) {
+        String matchedEndpoint = matchEndpoint(request.getRequestURI());
+        if (matchedEndpoint == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String clientId = getClientIdentifier(request);
-        Bucket bucket = bucketStore.get(clientId, k -> createNewBucket());
+        String bucketKey = matchedEndpoint + ":" + clientId;
 
-        if (bucket.tryConsume(1)) {
+        Bucket bucket = bucketStore.get(bucketKey, k -> createBucketFor(matchedEndpoint));
+
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        if (probe.isConsumed()) {
             filterChain.doFilter(request, response);
         } else {
-            sendRateLimitResponse(response);
+            sendRateLimitResponse(response, probe.getNanosToWaitForRefill());
         }
     }
 
-    private Bucket createNewBucket() {
+    private Bucket createBucketFor(String endpoint) {
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(MAX_ATTEMPTS,
-                        Refill.greedy(MAX_ATTEMPTS, WINDOW)))
+                .addLimit(ENDPOINT_LIMITS.get(endpoint))
                 .build();
     }
 
-    private boolean shouldRateLimit(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return Stream.of(RATE_LIMITED_ENDPOINTS).anyMatch(path::startsWith);
+    private String matchEndpoint(String path) {
+        return Stream.of(RATE_LIMITED_ENDPOINTS)
+                .filter(path::startsWith)
+                .findFirst()
+                .orElse(null);
     }
 
     private String getClientIdentifier(HttpServletRequest request) {
@@ -70,9 +74,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return request.getRemoteAddr();
     }
 
-    private void sendRateLimitResponse(HttpServletResponse response) throws IOException {
-        final long retryAfter = WINDOW.getSeconds();
-
+    private void sendRateLimitResponse(HttpServletResponse response, long retryAfter) throws IOException {
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType("application/json");
         response.getWriter().write(

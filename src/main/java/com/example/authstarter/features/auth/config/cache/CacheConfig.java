@@ -59,8 +59,8 @@ public class CacheConfig {
     @Bean
     public Cache<String, Bucket> bucketStore() {
         return Caffeine.newBuilder()
-                .expireAfterAccess(Duration.ofMinutes(10))
-                .maximumSize(10_000)
+                .expireAfterAccess(Duration.ofHours(1))
+                .maximumSize(100_000)
                 .build();
     }
 }
