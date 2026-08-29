@@ -17,7 +17,7 @@ public interface PasskeyRepo extends JpaRepository<Passkey, UUID> {
 
     void deleteByCredentialId(String credentialId);
 
-    void deleteByCredentialIdAndUserId(String credentialId, UUID userId);
+    void deleteByIdAndUserId(UUID passkeyId, UUID userId);
 
     void deleteAllByUserId(UUID userId);
 }

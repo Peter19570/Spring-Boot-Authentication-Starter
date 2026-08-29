@@ -3,6 +3,7 @@ package com.example.authstarter.features.auth.controller;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
 import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
+import com.example.authstarter.features.auth.dto.response.PasskeyResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.service.AuthService;
 import com.example.authstarter.features.shared.dto.ApiResponse;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -176,14 +179,24 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Passkey Login Success", response));
     }
 
-    @DeleteMapping("/passkeys/{credentialId}")
+    @GetMapping("/passkeys")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Shows list of passkeys user has created")
+    public ResponseEntity<ApiResponse<List<PasskeyResponse>>> getAllPasskeys(
+            @AuthenticationPrincipal CustomUserPrincipal principal
+    ) {
+      List<PasskeyResponse> responses = authService.findAllUserPasskeys(principal.id());
+      return ResponseEntity.ok(ApiResponse.success("User Passkey List", responses));
+    }
+
+    @DeleteMapping("/passkeys/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Remove a registered passkey.")
     public ResponseEntity<Void> deleteSavedPasskey(
             @AuthenticationPrincipal CustomUserPrincipal principal,
-            @PathVariable String credentialId
+            @PathVariable UUID passkeyId
     ) {
-        authService.deleteSavedPasskey(principal.id(), credentialId);
+        authService.deleteSavedPasskey(principal.id(), passkeyId);
         return ResponseEntity.noContent().build();
     }
 

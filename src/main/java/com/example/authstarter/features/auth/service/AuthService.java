@@ -8,11 +8,14 @@ import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
 import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
+import com.example.authstarter.features.auth.dto.response.PasskeyResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
+import com.example.authstarter.features.auth.mapper.PasskeyMapper;
+import com.example.authstarter.features.auth.model.Passkey;
 import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
@@ -47,6 +50,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,6 +69,7 @@ public class AuthService {
     private final PRTService prtService;
     private final PasskeyRepo passkeyRepo;
     private final EmailService emailService;
+    private final PasskeyMapper passkeyMapper;
     private final GoogleIdTokenVerifier verifier;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
@@ -257,8 +262,13 @@ public class AuthService {
 
     }
 
-    public void deleteSavedPasskey(UUID userId, String credentialId){
-        passkeyRepo.deleteByCredentialIdAndUserId(credentialId, userId);
+    public List<PasskeyResponse> findAllUserPasskeys(UUID userId){
+        List<Passkey> passkeys = passkeyRepo.findAllByUserId(userId);
+        return passkeyMapper.toDto(passkeys);
+    }
+
+    public void deleteSavedPasskey(UUID passkeyId, UUID userId){
+        passkeyRepo.deleteByIdAndUserId(passkeyId, userId);
     }
 
     /**
