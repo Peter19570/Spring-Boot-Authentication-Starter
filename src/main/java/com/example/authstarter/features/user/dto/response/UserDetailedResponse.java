@@ -1,5 +1,6 @@
 package com.example.authstarter.features.user.dto.response;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record UserDetailedResponse(
@@ -9,6 +10,7 @@ public record UserDetailedResponse(
         String lastName,
         String picture,
         boolean emailVerified,
-        String provider
+        String provider,
+        Instant createdAt
 ) {
 }

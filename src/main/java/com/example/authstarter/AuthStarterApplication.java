@@ -25,7 +25,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  */
 
 @SpringBootApplication
-@EnableJpaAuditing
 public class AuthStarterApplication {
 
     public static void main(String[] args) {

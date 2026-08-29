@@ -265,16 +265,6 @@ public class AuthService {
      * EMAIL RELATED METHODS HERE
      */
 
-    public void verifyEmail(VerificationTokenRequest request) {
-        Verification verification = evtService.validateEVT(request.token());
-
-        User user = authHelper.fetchUser(UUID.fromString(verification.userId()));
-        user.setEmailVerified(true);
-
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_VERIFIED,
-                "Email verified successfully", Map.of()));
-    }
-
     public void resendVerificationEmail(UUID userId){
         User user = authHelper.fetchUser(userId);
 
@@ -284,6 +274,17 @@ public class AuthService {
 
         String rawToken = evtService.generateEVT(user.getId().toString(), null);
         emailService.sendVerificationEmail(user, rawToken);
+    }
+
+    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    public void verifyEmail(VerificationTokenRequest request) {
+        Verification verification = evtService.validateEVT(request.token());
+
+        User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));
+        user.setEmailVerified(true);
+
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_VERIFIED,
+                "Email verified successfully", Map.of()));
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
