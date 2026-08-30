@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "Handles user authentication, registration, and account security operations.")
 public class AuthController {
 

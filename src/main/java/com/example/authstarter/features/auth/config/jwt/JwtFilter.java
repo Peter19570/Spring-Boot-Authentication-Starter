@@ -96,7 +96,7 @@ public class JwtFilter extends OncePerRequestFilter {
         // And this forr token in the cookie, for now I don't issue the token to the client via cookie
         if (request.getCookies() != null) {
             return Stream.of(request.getCookies())
-                    .filter(cookie -> "accessToken".equals(cookie.getName()))
+                    .filter(cookie -> "at".equals(cookie.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
                     .orElse(null);
