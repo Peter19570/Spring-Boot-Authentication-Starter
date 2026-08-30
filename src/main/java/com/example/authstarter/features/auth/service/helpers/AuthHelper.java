@@ -55,43 +55,6 @@ public class AuthHelper {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public AuthResponse createAuthResponse(JwtService jwtService, User user, AuditAction auditAction){
-        eventPublisher.publishEvent(AuditRequest.log(
-                user, auditAction, "User logged in successfully", Map.of()));
-
-        return new AuthResponse(
-                true,
-                createTokenResponse(jwtService, user),
-                userMapper.toDto(user)
-        );
-    }
-
-    public TokenResponse createTokenResponse(JwtService jwtService, User user){
-        CustomUserPrincipal principal = new CustomUserPrincipal(user);
-
-        String access = jwtService.generateAccessToken(principal);
-        String refresh = jwtService.generateRefreshToken(principal);
-        long accessExpiration = jwtService.getAccessExpirationInSeconds();
-
-        RefreshToken rt = new RefreshToken();
-        rt.setUser(user);
-        rt.setTokenHash(hashToken(refresh));
-        rt.setExpiresAt(Instant.now().plus(Duration.ofDays(7)));
-        refreshTokenRepo.save(rt);
-
-        return new TokenResponse(access, refresh, accessExpiration);
-    }
-
-    public static String hashToken(String rawToken) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256")
-                    .digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Hashing failed", e);
-        }
-    }
-
     public User syncGoogleWithLocal(GoogleIdToken.Payload payload){
         User existingUser =  userRepo.findByEmail(payload.getEmail())
                 .orElseGet(() -> {
@@ -121,6 +84,71 @@ public class AuthHelper {
         userRepo.save(existingUser);
 
         return existingUser;
+    }
+
+    public NameParts extractUsernameFromEmail(String email){
+        int atIndex = email.indexOf("@");
+        String firstName = "not-set";
+        String lastName = "not-set";
+
+        if (atIndex > 0){
+            String tempName = email.substring(0, atIndex);
+
+            int dotIndex = tempName.indexOf(".");
+            if (dotIndex > 0 && dotIndex < tempName.length() - 1){
+                firstName = tempName.substring(0, dotIndex);
+                lastName = tempName.substring(dotIndex + 1, atIndex);
+
+            } else {
+                firstName = tempName;
+            }
+        }
+
+        return NameParts.names(firstName, lastName);
+    }
+
+    public AuthResponse createAuthResponse(JwtService jwtService, User user, AuditAction auditAction){
+        eventPublisher.publishEvent(AuditRequest.log(
+                user, auditAction, "User logged in successfully", Map.of()));
+
+        return new AuthResponse(
+                true,
+                createTokenResponse(jwtService, user),
+                userMapper.toDto(user)
+        );
+    }
+
+    public TokenResponse createTokenResponse(JwtService jwtService, User user){
+        CustomUserPrincipal principal = new CustomUserPrincipal(user);
+
+        String access = jwtService.generateAccessToken(principal);
+        String refresh = jwtService.generateRefreshToken(principal);
+        long accessExpiration = jwtService.getAccessExpirationInSeconds();
+
+        RefreshToken rt = new RefreshToken();
+        rt.setUser(user);
+        rt.setTokenHash(hashToken(refresh));
+        rt.setExpiresAt(Instant.now().plus(Duration.ofDays(7)));
+        refreshTokenRepo.save(rt);
+
+        return new TokenResponse(access, refresh, accessExpiration);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void processFailedLoginAttempt(User user){
+        int newAttempts = user.getFailedLoginAttempts() + 1;
+        user.setFailedLoginAttempts(newAttempts);
+
+        if (newAttempts >= 5) {
+            user.setLocked(true);
+            user.setLockedUntil(Instant.now().plus(Duration.ofMinutes(15)));
+        }
+
+        userRepo.save(user);
+
+        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGIN_ATTEMPT,
+                "User attempted login with incorrect password",
+                Map.of("message", "Failed login attempts: " + newAttempts)));
     }
 
     public void resolveAuthProviders(User user, String targetProvider){
@@ -156,53 +184,25 @@ public class AuthHelper {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processFailedLoginAttempt(User user){
-        int newAttempts = user.getFailedLoginAttempts() + 1;
-        user.setFailedLoginAttempts(newAttempts);
-
-        if (newAttempts >= 5) {
-            user.setLocked(true);
-            user.setLockedUntil(Instant.now().plus(Duration.ofMinutes(15)));
-        }
-
-        userRepo.save(user);
-
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGIN_ATTEMPT,
-                "User attempted login with incorrect password",
-                    Map.of("message", "Failed login attempts: " + newAttempts)));
-    }
-
     public void resetAccountLock(User user){
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
         user.setLocked(false);
     }
 
-    public NameParts extractUsernameFromEmail(String email){
-        int atIndex = email.indexOf("@");
-        String firstName = "not-set";
-        String lastName = "not-set";
-
-        if (atIndex > 0){
-            String tempName = email.substring(0, atIndex);
-
-            int dotIndex = tempName.indexOf(".");
-            if (dotIndex > 0 && dotIndex < tempName.length() - 1){
-                firstName = tempName.substring(0, dotIndex);
-                lastName = tempName.substring(dotIndex + 1, atIndex);
-
-            } else {
-                firstName = tempName;
-            }
-        }
-
-        return NameParts.names(firstName, lastName);
-    }
-
     public void validateEmailNotRegistered(String email){
         if (userRepo.existsByEmail(email)) {
             throw new AlreadyExistException("Email already registered");
+        }
+    }
+
+    public static String hashToken(String rawToken){
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Hashing failed", e);
         }
     }
 }

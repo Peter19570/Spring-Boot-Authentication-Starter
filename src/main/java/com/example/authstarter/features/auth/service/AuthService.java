@@ -179,7 +179,7 @@ public class AuthService {
      */
 
     public PasskeyOptionsResponse startPasskeyRegistration(
-            HttpServletRequest request, HttpServletResponse response) {
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -189,7 +189,7 @@ public class AuthService {
             PublicKeyCredentialCreationOptions options =
                     relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
 
-            creationOptionsRepository.save(request, response, options);
+            creationOptionsRepository.save(servletRequest, servletResponse, options);
             return PasskeyOptionsResponse.toResponse(options);
         }
 
@@ -224,14 +224,14 @@ public class AuthService {
     }
 
     public PublicKeyCredentialRequestOptions startPasskeyAuthentication(
-            HttpServletRequest request, HttpServletResponse response) {
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
 
         var optionsRequest = new ImmutablePublicKeyCredentialRequestOptionsRequest(null);
 
         PublicKeyCredentialRequestOptions options =
                 relyingPartyOperations.createCredentialRequestOptions(optionsRequest);
 
-        requestOptionsRepository.save(request, response, options);
+        requestOptionsRepository.save(servletRequest, servletResponse, options);
         return options;
     }
 
@@ -262,12 +262,12 @@ public class AuthService {
 
     }
 
-    public List<PasskeyResponse> findAllUserPasskeys(UUID userId){
+    public List<PasskeyResponse> findAllUserPasskeys(UUID userId) {
         List<Passkey> passkeys = passkeyRepo.findAllByUserId(userId);
         return passkeyMapper.toDto(passkeys);
     }
 
-    public void deleteSavedPasskey(UUID passkeyId, UUID userId){
+    public void deleteSavedPasskey(UUID passkeyId, UUID userId) {
         passkeyRepo.deleteByIdAndUserId(passkeyId, userId);
     }
 
@@ -275,7 +275,7 @@ public class AuthService {
      * EMAIL RELATED METHODS HERE
      */
 
-    public void resendVerificationEmail(UUID userId){
+    public void resendVerificationEmail(UUID userId) {
         User user = authHelper.fetchUser(userId);
 
         if (user.isEmailVerified()){
