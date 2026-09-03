@@ -14,8 +14,8 @@ import static com.example.authstarter.features.auth.service.helpers.AuthHelper.h
 @RequiredArgsConstructor
 public class OTPService { // One-Time Password Code
 
-    private final Cache<String, String> otpStore;
     private final SecureRandom random;
+    private final Cache<String, String> otpStore;
 
     public String generateOtp(String userId) {
         String otpCode = String.format("%06d", random.nextInt(1000000));

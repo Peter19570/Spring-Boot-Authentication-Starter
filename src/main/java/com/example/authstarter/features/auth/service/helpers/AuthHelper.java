@@ -3,6 +3,7 @@ package com.example.authstarter.features.auth.service.helpers;
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
+import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
 import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
@@ -44,7 +45,7 @@ public class AuthHelper {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "all-users", key = "#userId")
+    @Cacheable(cacheNames = CacheConstants.ALL_USERS, key = "#userId")
     public User fetchUser(UUID userId){
         return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
