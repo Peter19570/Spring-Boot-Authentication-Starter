@@ -3,6 +3,7 @@ package com.example.authstarter.features.auth.service;
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
+import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
@@ -84,8 +85,8 @@ public class AuthService {
      * MAJOR AUTHENTICATION METHODS HERE
      */
 
-    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
 
@@ -102,8 +103,8 @@ public class AuthService {
         return authHelper.createAuthResponse(jwtService, savedUser, AuditAction.REGISTER);
     }
 
-    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public AuthResponse login(AuthRequest request) {
         User user = userRepo.findByEmail(request.email())
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -142,8 +143,8 @@ public class AuthService {
         return authHelper.createTokenResponse(jwtService, user);
     }
 
-    @CachePut(cacheNames = "users", key = "#userId")
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CachePut(cacheNames = CacheConstants.USERS, key = "#userId")
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public void logout(RefreshTokenRequest request, UUID userId) {
         User user = authHelper.fetchUser(userId);
 
@@ -160,8 +161,8 @@ public class AuthService {
         eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGOUT, message, Map.of()));
     }
 
-    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public AuthResponse googleLogin(GoogleRequest request)
             throws GeneralSecurityException, IOException {
         GoogleIdToken idToken = verifier.verify(request.idToken());
@@ -235,8 +236,8 @@ public class AuthService {
         return options;
     }
 
-    @CachePut(cacheNames = "users", key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public AuthResponse finishPasskeyAuthentication(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             PasskeyLoginRequest request) {
@@ -286,7 +287,7 @@ public class AuthService {
         emailService.sendVerificationEmail(user, rawToken);
     }
 
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public void verifyEmail(VerificationTokenRequest request) {
         Verification verification = evtService.validateEVT(request.token());
 
@@ -311,7 +312,7 @@ public class AuthService {
         emailService.sendEmailChangeConfirmation(newEmail, rawToken);
     }
 
-    @CacheEvict(cacheNames = "all-users", allEntries = true)
+    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
     public void confirmEmailChange(VerificationTokenRequest request) {
         Verification verification = evtService.validateEVT(request.token());
         User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));

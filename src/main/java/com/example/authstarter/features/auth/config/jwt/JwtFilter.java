@@ -1,5 +1,6 @@
 package com.example.authstarter.features.auth.config.jwt;
 
+import com.example.authstarter.features.auth.constants.JWTConstants;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
@@ -49,14 +50,14 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (request.getMethod().equals("OPTIONS")) {
+        if (request.getMethod().equals(JWTConstants.HTTP_REQUEST_METHOD)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             UUID userId = UUID.fromString(jwtService.extractUserId(jwt));
-            String email = jwtService.extractUserEmail(jwt); // this is low-key not useful (at least to me)
+            String email = jwtService.extractUserEmail(jwt); // (unnecessary btw since i work with userID)
             List<String> rawRoles = jwtService.extractUserRoles(jwt);
 
             List<SimpleGrantedAuthority> authorities = rawRoles.stream()
@@ -87,9 +88,10 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {
+
         // This for token in the header
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith(JWTConstants.TOKEN_PREFIX)) {
             return authHeader.substring(7);
         }
 

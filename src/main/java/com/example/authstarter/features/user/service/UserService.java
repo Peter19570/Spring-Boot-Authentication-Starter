@@ -2,6 +2,7 @@ package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
+import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
@@ -49,7 +50,7 @@ public class UserService {
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    @CacheEvict(cacheNames = {"users", "all-users"}, key = "#userId")
+    @CacheEvict(cacheNames = {CacheConstants.USERS, CacheConstants.ALL_USERS}, key = "#userId")
     public void confirmSoftDelete(UUID userId, AccountDeletionRequest request) {
         User currentUser = authHelper.fetchUserFresh(userId);
 

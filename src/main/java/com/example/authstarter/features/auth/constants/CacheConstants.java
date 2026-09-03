@@ -5,4 +5,8 @@ public final class CacheConstants {
     private CacheConstants(){}
 
     public static final String[] CACHE_NAMES = {"users", "all-users"};
+
+    public static final String USERS = "users";
+
+    public static final String ALL_USERS = "all-users";
 }

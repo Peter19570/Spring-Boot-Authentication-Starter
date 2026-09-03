@@ -1,10 +1,8 @@
 package com.example.authstarter.features.shared.dto;
 
 import com.example.authstarter.features.user.model.User;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -19,7 +17,7 @@ public record CustomUserPrincipal(
 
         // I'm keeping it light here... u can add fields u deem necessary, your call
 
-) implements UserDetails{
+) implements UserDetails {
 
     public CustomUserPrincipal(User user){
         this(
