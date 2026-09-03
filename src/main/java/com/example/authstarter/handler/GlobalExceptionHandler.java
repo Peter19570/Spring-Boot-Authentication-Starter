@@ -9,6 +9,7 @@ import jakarta.mail.MessagingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailSendException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -62,7 +63,8 @@ public class GlobalExceptionHandler {
             UsernameNotFoundException.class,
             IllegalStateException.class,
             AccessDeniedException.class,
-            IllegalArgumentException.class
+            IllegalArgumentException.class,
+            MailAuthenticationException.class
     })
     public ResponseEntity<ApiResponse<String>> handleUnauthorizedException(Exception ex){
         return ResponseEntity

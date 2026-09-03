@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.security.SecureRandom;
 import java.util.concurrent.*;
 
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
@@ -14,10 +15,12 @@ import static com.example.authstarter.features.auth.service.helpers.AuthHelper.h
 public class OTPService { // One-Time Password Code
 
     private final Cache<String, String> otpStore;
+    private final SecureRandom random;
 
     public String generateOtp(String userId) {
-        String otpCode = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+        String otpCode = String.format("%06d", random.nextInt(1000000));
         otpStore.put(userId, hashToken(otpCode));
+
         return otpCode;
     }
 
