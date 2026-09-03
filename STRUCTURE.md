@@ -46,6 +46,7 @@ example/
     │   │   ├── constants
     │   │   │   ├── CacheConstants.java
     │   │   │   ├── CorsConstants.java
+    │   │   │   ├── JWTConstants.java
     │   │   │   ├── RateLimitConstants.java
     │   │   │   └── SecurityConstants.java
     │   │   ├── controller
@@ -68,6 +69,7 @@ example/
     │   │   │   └── response
     │   │   │       ├── AuthResponse.java
     │   │   │       ├── PasskeyOptionsResponse.java
+    │   │   │       ├── PasskeyResponse.java
     │   │   │       └── TokenResponse.java
     │   │   ├── exceptions
     │   │   │   ├── AlreadyExistException.java
