@@ -5,7 +5,7 @@ import com.example.authstarter.features.user.model.User;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AuthMapper {
 
     @Mapping(target = "id", ignore = true)
