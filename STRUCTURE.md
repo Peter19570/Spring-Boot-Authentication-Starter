@@ -46,13 +46,14 @@ example/
     │   │   ├── constants
     │   │   │   ├── CacheConstants.java
     │   │   │   ├── CorsConstants.java
-    │   │   │   ├── JWTConstants.java
+    │   │   │   ├── JwtConstants.java
     │   │   │   ├── RateLimitConstants.java
     │   │   │   └── SecurityConstants.java
     │   │   ├── controller
     │   │   │   └── AuthController.java
     │   │   ├── dto
     │   │   │   ├── internal
+    │   │   │   │   ├── JwtClaims.java
     │   │   │   │   ├── NameParts.java
     │   │   │   │   └── Verification.java
     │   │   │   ├── request
@@ -64,8 +65,7 @@ example/
     │   │   │   │   ├── PasskeyLoginRequest.java
     │   │   │   │   ├── PasskeyRegistrationRequest.java
     │   │   │   │   ├── RefreshTokenRequest.java
-    │   │   │   │   ├── ResetPasswordRequest.java
-    │   │   │   │   └── VerificationTokenRequest.java
+    │   │   │   │   └── ResetPasswordRequest.java
     │   │   │   └── response
     │   │   │       ├── AuthResponse.java
     │   │   │       ├── PasskeyOptionsResponse.java
@@ -100,6 +100,8 @@ example/
     │   │   ├── config
     │   │   │   ├── AppConfig.java
     │   │   │   └── SwaggerConfig.java
+    │   │   ├── constants
+    │   │   │   └── ControllerConstants.java
     │   │   ├── dto
     │   │   │   ├── ApiResponse.java
     │   │   │   ├── CustomUserPrincipal.java
