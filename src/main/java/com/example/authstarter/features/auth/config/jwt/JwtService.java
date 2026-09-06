@@ -1,9 +1,9 @@
 package com.example.authstarter.features.auth.config.jwt;
 
+import com.example.authstarter.features.auth.dto.internal.JwtClaims;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +17,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+
+import static com.example.authstarter.features.auth.constants.JwtConstants.*;
 
 @Component
 public class JwtService {
@@ -38,9 +39,9 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        claims.put("email", principal.email());
-        claims.put("roles", roles);
-        claims.put("type", "at");
+        claims.put(EMAIL, principal.email());
+        claims.put(GRANTED_AUTHORITIES, roles);
+        claims.put(TOKEN_TYPE, ACCESS_VALUE);
 
         return createToken(claims, principal.id().toString(), accessTokenExpiration.toMillis());
     }
@@ -48,33 +49,29 @@ public class JwtService {
     public String generateRefreshToken(CustomUserPrincipal principal) {
         Map<String, Object> claims = new HashMap<>();
 
-        claims.put("type", "rt");
+        claims.put(TOKEN_TYPE, REFRESH_VALUE);
         return createToken(claims, principal.id().toString(), refreshTokenExpiration.toMillis());
     }
 
-    public boolean isTokenValid(String token, String expectedUserId) {
-        final String userIdFromToken = extractUserId(token);
-        return (userIdFromToken.equals(expectedUserId) && !isTokenExpired(token));
+    public boolean isTokenValid(boolean expiredToken) {
+        return !expiredToken;
     }
 
-    public String extractUserId(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
-    public String extractUserEmail(String token){
-        return extractClaim(token, claims -> claims.get("email", String.class));
-    }
-
-    public List<String> extractUserRoles(String token){
-        return extractClaim(token, claims -> claims.get("roles", List.class));
-    }
-
-    public String extractTokenType(String token){
-        return extractClaim(token, claims -> claims.get("type", String.class));
+    public JwtClaims extractToken(String token){
+        Claims claims = extractAllClaims(token);
+        return JwtClaims.extracted(claims);
     }
 
     public long getAccessExpirationInSeconds() {
         return accessTokenExpiration.toSeconds();
+    }
+
+    public Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private String createToken(Map<String, Object> claims, String subject, long expirationMillis) {
@@ -86,23 +83,6 @@ public class JwtService {
                 .expiration(Date.from(now.plusMillis(expirationMillis)))
                 .signWith(getSigningKey())
                 .compact();
-    }
-
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
     private SecretKey getSigningKey() {

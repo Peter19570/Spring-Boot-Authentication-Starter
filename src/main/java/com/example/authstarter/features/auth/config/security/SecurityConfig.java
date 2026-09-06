@@ -1,7 +1,6 @@
 package com.example.authstarter.features.auth.config.security;
 
 import com.example.authstarter.features.auth.config.jwt.JwtFilter;
-import com.example.authstarter.features.auth.constants.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+
+import static com.example.authstarter.features.auth.constants.SecurityConstants.*;
 
 @Configuration
 @EnableWebSecurity
@@ -38,11 +39,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, SecurityConstants.PATTERN_URLS).permitAll()
-                        .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
-                        .requestMatchers(SecurityConstants.SWAGGER_URLS).permitAll()
-                        .requestMatchers(SecurityConstants.WEBSOCKET_URLS).permitAll()
-                        .requestMatchers(SecurityConstants.ACTUATOR_URLS).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, PATTERN_URLS).permitAll()
+                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        .requestMatchers(SWAGGER_URLS).permitAll()
+                        .requestMatchers(WEBSOCKET_URLS).permitAll()
+                        .requestMatchers(ACTUATOR_URLS).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

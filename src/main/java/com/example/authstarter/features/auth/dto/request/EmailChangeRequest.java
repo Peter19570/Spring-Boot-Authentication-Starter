@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public record EmailChangeRequest(
         @NotBlank(message = "New email is required")
-        @Email(message = "Please provide a valid email address")
+        @Email(message = "Invalid email address")
         String newEmail
 ) {}

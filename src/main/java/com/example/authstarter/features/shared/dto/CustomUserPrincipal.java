@@ -15,26 +15,27 @@ public record CustomUserPrincipal(
         String password,
         Collection<? extends GrantedAuthority> authorities
 
-        // I'm keeping it light here... u can add fields u deem necessary, your call
+        // I'm keeping it light here... u can add fields u deem necessary, your call...
 
 ) implements UserDetails {
 
-    public CustomUserPrincipal(User user){
-        this(
+    public static CustomUserPrincipal fromDatabase(User user){
+        return new CustomUserPrincipal(
                 user.getId(),
                 user.getEmail(),
                 user.getPassword(),
                 List.of()
 
-        //     List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().name()))
+                // List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().name()))
         );
     }
 
-    public CustomUserPrincipal(
-            UUID id,
+    public static CustomUserPrincipal fromToken(
+            UUID userId,
             String email,
-            Collection<? extends GrantedAuthority> authorities) {
-        this(id, email, null, authorities);
+            Collection<? extends GrantedAuthority> authorities){
+
+        return new CustomUserPrincipal(userId, email, null, authorities);
     }
 
     @Override

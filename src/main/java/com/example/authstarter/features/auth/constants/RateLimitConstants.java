@@ -10,14 +10,18 @@ public final class RateLimitConstants {
 
     private RateLimitConstants () {}
 
+    public static final String HEADER_NAME = "X-Forwarded-For";
+
+    public static final String CONTENT_TYPE = "application/json";
+
     public static final String[] RATE_LIMITED_ENDPOINTS = {
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
             "/api/v1/auth/register",
-            "/api/v1/auth/forgot-password",
             "/api/v1/auth/reset-password",
-            "/api/v1/auth/resend-verification-email",
-            "/api/v1/auth/passkeys/challenge"
+            "/api/v1/auth/forgot-password",
+            "/api/v1/auth/passkeys/challenge",
+            "/api/v1/auth/resend-verification-email"
     };
 
     public static final Map<String, Bandwidth> ENDPOINT_LIMITS = Map.of(

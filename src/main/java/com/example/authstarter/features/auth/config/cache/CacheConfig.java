@@ -1,6 +1,5 @@
 package com.example.authstarter.features.auth.config.cache;
 
-import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -13,6 +12,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+import static com.example.authstarter.features.auth.constants.CacheConstants.CACHE_NAMES;
+
 @Configuration
 @EnableCaching
 public class CacheConfig {
@@ -23,7 +24,7 @@ public class CacheConfig {
 
     @Bean
     public CacheManager dataStore() {
-        CaffeineCacheManager manager = new CaffeineCacheManager(CacheConstants.CACHE_NAMES);
+        CaffeineCacheManager manager = new CaffeineCacheManager(CACHE_NAMES);
         manager.setCaffeine(
                 Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(10))

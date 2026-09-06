@@ -5,10 +5,10 @@ import jakarta.validation.constraints.Size;
 
 public record AccountDeletionRequest(
         @NotBlank(message = "Password is required")
-        @Size(min = 6, message = "Password should be greater than 6 characters")
+        @Size(min = 6, max = 128, message = "Password must be between 8 and 128 characters")
         String password,
 
         @NotBlank(message = "Verification code is required")
-        @Size(min = 6, max = 6, message = "OTP must be exactly 6 characters")
+        @Size(min = 6, max = 6, message = "OTP must be 6 characters")
         String otp
 ) {}

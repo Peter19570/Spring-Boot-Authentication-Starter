@@ -1,8 +1,6 @@
 package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
-import com.example.authstarter.features.audit.enums.AuditAction;
-import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
@@ -23,6 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+
+import static com.example.authstarter.features.audit.enums.AuditAction.ACCOUNT_SOFT_DELETED;
+import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
+import static com.example.authstarter.features.auth.constants.CacheConstants.USERS;
 
 @Service
 @Transactional
@@ -50,7 +52,7 @@ public class UserService {
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    @CacheEvict(cacheNames = {CacheConstants.USERS, CacheConstants.ALL_USERS}, key = "#userId")
+    @CacheEvict(cacheNames = {USERS, ALL_USERS}, key = "#userId")
     public void confirmSoftDelete(UUID userId, AccountDeletionRequest request) {
         User currentUser = authHelper.fetchUserFresh(userId);
 
@@ -67,7 +69,7 @@ public class UserService {
         refreshTokenRepo.deleteAllByUserId(currentUser.getId());
         passkeyRepo.deleteAllByUserId(currentUser.getId());
 
-        eventPublisher.publishEvent(AuditRequest.log(currentUser, AuditAction.ACCOUNT_SOFT_DELETED,
+        eventPublisher.publishEvent(AuditRequest.log(currentUser, ACCOUNT_SOFT_DELETED,
                 "User account has been soft deleted", Map.of()));
     }
 }

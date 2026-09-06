@@ -1,6 +1,6 @@
 package com.example.authstarter.features.auth.config.jwt;
 
-import com.example.authstarter.features.auth.constants.JWTConstants;
+import com.example.authstarter.features.auth.dto.internal.JwtClaims;
 import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
@@ -15,7 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -24,10 +23,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Stream;
+
+import static com.example.authstarter.features.auth.constants.JwtConstants.*;
 
 @Component
 @RequiredArgsConstructor
@@ -50,36 +49,29 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (request.getMethod().equals(JWTConstants.HTTP_REQUEST_METHOD)) {
+        if (request.getMethod().equals(OPTIONS_HTTP_METHOD)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            UUID userId = UUID.fromString(jwtService.extractUserId(jwt));
-            String email = jwtService.extractUserEmail(jwt); // (unnecessary btw since i work with userID)
-            List<String> rawRoles = jwtService.extractUserRoles(jwt);
+            JwtClaims jwtClaims = jwtService.extractToken(jwt);
 
-            List<SimpleGrantedAuthority> authorities = rawRoles.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .toList();
+            CustomUserPrincipal principal = CustomUserPrincipal.fromToken(
+                    jwtClaims.userId(), jwtClaims.email(), jwtClaims.authorities());
 
-            CustomUserPrincipal principal = new CustomUserPrincipal(userId, email, authorities);
-
-            if (jwtService.isTokenValid(jwt, principal.id().toString())) {
-                if (!jwtService.extractTokenType(jwt).equals("at")){
+            if (jwtService.isTokenValid(jwtClaims.expired())) {
+                if (!jwtClaims.tokenType().equals(ACCESS_VALUE)){
                     throw new IllegalStateException("Invalid token type. Access token required.");
                 }
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        principal,
-                        null,
-                        principal.getAuthorities()
-                );
+                        principal, null, principal.getAuthorities());
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+
             filterChain.doFilter(request, response);
 
         } catch (JwtException | UsernameNotFoundException | IllegalStateException e) {
@@ -89,16 +81,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private String getTokenFromRequest(HttpServletRequest request) {
 
-        // This for token in the header
+        // Extract Token From Header
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(authHeader) && authHeader.startsWith(JWTConstants.TOKEN_PREFIX)) {
-            return authHeader.substring(7);
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith(TOKEN_PREFIX)) {
+            return authHeader.substring(TOKEN_PREFIX.length());
         }
 
-        // And this forr token in the cookie, for now I don't issue the token to the client via cookie
+        // Extract Token From Cookie
         if (request.getCookies() != null) {
             return Stream.of(request.getCookies())
-                    .filter(cookie -> "at".equals(cookie.getName()))
+                    .filter(cookie -> ACCESS_VALUE.equals(cookie.getName()))
                     .map(Cookie::getValue)
                     .findFirst()
                     .orElse(null);
@@ -110,6 +102,6 @@ public class JwtFilter extends OncePerRequestFilter {
     private void handleException(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(Map.of("error", message)));
+        response.getWriter().write(objectMapper.writeValueAsString(Map.of("Error", message)));
     }
 }

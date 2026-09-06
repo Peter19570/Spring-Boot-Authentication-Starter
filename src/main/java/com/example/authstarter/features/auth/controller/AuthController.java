@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -94,9 +96,12 @@ public class AuthController {
     @GetMapping("/verify-email")
     @Operation(summary = "Verify user's email address.")
     public ResponseEntity<Void> verifyEmail(
-            @Valid @RequestBody VerificationTokenRequest request
+            @RequestParam
+            @NotBlank(message = "Token is required")
+            @Size(min = 36, max = 36, message = "UUID must be exactly 36 characters")
+            String token
     ) {
-        authService.verifyEmail(request);
+        authService.verifyEmail(token);
         return ResponseEntity.noContent().build();
     }
 
@@ -124,9 +129,12 @@ public class AuthController {
     @GetMapping("/confirm-email")
     @Operation(summary = "Verify and change email")
     public ResponseEntity<Void> confirmChange(
-            @Valid @RequestBody VerificationTokenRequest request
+            @RequestParam
+            @NotBlank(message = "Token is required")
+            @Size(min = 36, max = 36, message = "UUID must be exactly 36 characters")
+            String token
     ) {
-        authService.confirmEmailChange(request);
+        authService.confirmEmailChange(token);
         return ResponseEntity.noContent().build();
     }
 

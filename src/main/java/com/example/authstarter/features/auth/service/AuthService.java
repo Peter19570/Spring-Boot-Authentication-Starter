@@ -1,9 +1,8 @@
 package com.example.authstarter.features.auth.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
-import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
-import com.example.authstarter.features.auth.constants.CacheConstants;
+import com.example.authstarter.features.auth.dto.internal.JwtClaims;
 import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.example.authstarter.features.auth.dto.request.*;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
@@ -55,6 +54,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.authstarter.features.audit.enums.AuditAction.*;
+import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
+import static com.example.authstarter.features.auth.constants.CacheConstants.USERS;
+import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 
 @Service
@@ -85,8 +88,8 @@ public class AuthService {
      * MAJOR AUTHENTICATION METHODS HERE
      */
 
-    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
+    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
 
@@ -100,11 +103,11 @@ public class AuthService {
         String rawToken = evtService.generateEVT(savedUser.getId().toString(), null);
         emailService.sendVerificationEmail(savedUser, rawToken);
 
-        return authHelper.createAuthResponse(jwtService, savedUser, AuditAction.REGISTER);
+        return authHelper.createAuthResponse(savedUser, REGISTER);
     }
 
-    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
+    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse login(AuthRequest request) {
         User user = userRepo.findByEmail(request.email())
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -117,7 +120,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
             authHelper.resetAccountLock(user);
-            return authHelper.createAuthResponse(jwtService, user, AuditAction.LOCAL_LOGIN);
+            return authHelper.createAuthResponse(user, LOCAL_LOGIN);
 
         } catch (BadCredentialsException e) {
             authHelper.processFailedLoginAttempt(user);
@@ -127,24 +130,24 @@ public class AuthService {
 
     public TokenResponse refresh(RefreshTokenRequest request) {
         String token = request.refreshToken();
-        String userId = jwtService.extractUserId(token);
+        JwtClaims jwtClaims = jwtService.extractToken(token);
 
-        if (!jwtService.extractTokenType(token).equals("rt")){
+        if (!jwtClaims.tokenType().equals(REFRESH_VALUE)){
             throw new IllegalStateException("Invalid token type. Refresh token required.");
         }
 
-        User user = authHelper.fetchUser(UUID.fromString(userId));
+        User user = authHelper.fetchUser(jwtClaims.userId());
 
         RefreshToken storedToken = refreshTokenRepo.findByTokenHash(hashToken(token))
                 .filter(rt -> !rt.isRevoked() && rt.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new NotFoundException("Refresh token is invalid or expired"));
 
         storedToken.setRevoked(true);
-        return authHelper.createTokenResponse(jwtService, user);
+        return authHelper.createTokenResponse(user);
     }
 
-    @CachePut(cacheNames = CacheConstants.USERS, key = "#userId")
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
+    @CachePut(cacheNames = USERS, key = "#userId")
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public void logout(RefreshTokenRequest request, UUID userId) {
         User user = authHelper.fetchUser(userId);
 
@@ -158,11 +161,11 @@ public class AuthService {
 
         String message = (revoked) ? "User logout success" : "User logged out without token revoke";
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGOUT, message, Map.of()));
+        eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, message, Map.of()));
     }
 
-    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
+    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse googleLogin(GoogleRequest request)
             throws GeneralSecurityException, IOException {
         GoogleIdToken idToken = verifier.verify(request.idToken());
@@ -172,7 +175,7 @@ public class AuthService {
         GoogleIdToken.Payload payload = idToken.getPayload();
 
         User user = authHelper.syncGoogleWithLocal(payload);
-        return authHelper.createAuthResponse(jwtService, user, AuditAction.OAUTH_LOGIN);
+        return authHelper.createAuthResponse(user, OAUTH_LOGIN);
     }
 
     /**
@@ -214,7 +217,7 @@ public class AuthService {
             authHelper.resolveAuthProviders(existingUser, "PASSKEY");
 
             eventPublisher.publishEvent(
-                    AuditRequest.log(existingUser, AuditAction.PASSKEY_LINK,
+                    AuditRequest.log(existingUser, PASSKEY_LINK,
                             "Passkey linked successfully", Map.of()));
 
             creationOptionsRepository.save(servletRequest, servletResponse, null);
@@ -236,8 +239,8 @@ public class AuthService {
         return options;
     }
 
-    @CachePut(cacheNames = CacheConstants.USERS, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
+    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse finishPasskeyAuthentication(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             PasskeyLoginRequest request) {
@@ -256,7 +259,7 @@ public class AuthService {
             authHelper.resetAccountLock(user);
 
             requestOptionsRepository.save(servletRequest, servletResponse, null);
-            return authHelper.createAuthResponse(jwtService, user, AuditAction.PASSKEY_LOGIN);
+            return authHelper.createAuthResponse(user, PASSKEY_LOGIN);
         }
 
         throw new IllegalStateException("Login session missing or expired");
@@ -287,14 +290,14 @@ public class AuthService {
         emailService.sendVerificationEmail(user, rawToken);
     }
 
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
-    public void verifyEmail(VerificationTokenRequest request) {
-        Verification verification = evtService.validateEVT(request.token());
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
+    public void verifyEmail(String token) {
+        Verification verification = evtService.validateEVT(token);
 
         User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));
         user.setEmailVerified(true);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_VERIFIED,
+        eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_VERIFIED,
                 "Email verified successfully", Map.of()));
     }
 
@@ -312,9 +315,9 @@ public class AuthService {
         emailService.sendEmailChangeConfirmation(newEmail, rawToken);
     }
 
-    @CacheEvict(cacheNames = CacheConstants.ALL_USERS, allEntries = true)
-    public void confirmEmailChange(VerificationTokenRequest request) {
-        Verification verification = evtService.validateEVT(request.token());
+    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
+    public void confirmEmailChange(String token) {
+        Verification verification = evtService.validateEVT(token);
         User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));
 
         String oldEmail = user.getEmail();
@@ -322,7 +325,7 @@ public class AuthService {
 
         user.setEmail(newEmail);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.EMAIL_CHANGED,
+        eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_CHANGED,
                 "User has changed email", Map.of(
                         "old email", oldEmail, "new email", newEmail)));
     }
@@ -356,7 +359,7 @@ public class AuthService {
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.PASSWORD_RESET,
+        eventPublisher.publishEvent(AuditRequest.log(user, PASSWORD_RESET,
                 "User reset password successfully", Map.of()));
     }
 

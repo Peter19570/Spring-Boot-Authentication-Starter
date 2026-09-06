@@ -1,6 +1,5 @@
 package com.example.authstarter.features.auth.config.cors;
 
-import com.example.authstarter.features.auth.constants.CorsConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +8,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+
+import static com.example.authstarter.features.auth.constants.CorsConstants.*;
 
 @Configuration
 public class CorsConfig {
@@ -20,14 +21,14 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(allowedOrigins);
-        config.setAllowedMethods(CorsConstants.ALLOWED_METHODS);
-        config.setAllowedHeaders(CorsConstants.ALLOWED_HEADERS);
-        config.setExposedHeaders(CorsConstants.ALLOWED_EXPOSED_HEADERS);
+        config.setAllowedMethods(ALLOWED_METHODS);
+        config.setAllowedHeaders(ALLOWED_HEADERS);
+        config.setExposedHeaders(ALLOWED_EXPOSED_HEADERS);
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration(CorsConstants.PATTERN, config);
+        source.registerCorsConfiguration(PATTERN, config);
         return source;
     }
 }

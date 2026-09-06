@@ -3,7 +3,6 @@ package com.example.authstarter.features.auth.service.helpers;
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.audit.enums.AuditAction;
 import com.example.authstarter.features.auth.config.jwt.JwtService;
-import com.example.authstarter.features.auth.constants.CacheConstants;
 import com.example.authstarter.features.auth.dto.response.AuthResponse;
 import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
@@ -34,6 +33,9 @@ import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.example.authstarter.features.audit.enums.AuditAction.*;
+import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
+
 @Component
 @RequiredArgsConstructor
 public class AuthHelper {
@@ -41,11 +43,12 @@ public class AuthHelper {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
+    private final JwtService jwtService;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = CacheConstants.ALL_USERS, key = "#userId")
+    @Cacheable(cacheNames = ALL_USERS, key = "#userId")
     public User fetchUser(UUID userId){
         return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -62,7 +65,7 @@ public class AuthHelper {
                     User user = authMapper.toEntityFromGooglePayload(payload);
 
                     eventPublisher.publishEvent(AuditRequest.log(
-                            user, AuditAction.REGISTER,
+                            user, REGISTER,
                             "User created account with Google login", Map.of()));
 
                     return userRepo.save(user);
@@ -77,7 +80,7 @@ public class AuthHelper {
             authMapper.updateEntityFromGooglePayload(payload, existingUser);
 
             eventPublisher.publishEvent(AuditRequest.log(
-                    existingUser, AuditAction.SOCIAL_LINK,
+                    existingUser, SOCIAL_LINK,
                     "Google account linked successfully", Map.of()));
         }
 
@@ -108,19 +111,15 @@ public class AuthHelper {
         return NameParts.names(firstName, lastName);
     }
 
-    public AuthResponse createAuthResponse(JwtService jwtService, User user, AuditAction auditAction){
+    public AuthResponse createAuthResponse(User user, AuditAction auditAction){
         eventPublisher.publishEvent(AuditRequest.log(
                 user, auditAction, "User logged in successfully", Map.of()));
 
-        return new AuthResponse(
-                true,
-                createTokenResponse(jwtService, user),
-                userMapper.toDto(user)
-        );
+        return new AuthResponse(true, createTokenResponse(user), userMapper.toDto(user));
     }
 
-    public TokenResponse createTokenResponse(JwtService jwtService, User user){
-        CustomUserPrincipal principal = new CustomUserPrincipal(user);
+    public TokenResponse createTokenResponse(User user){
+        CustomUserPrincipal principal = CustomUserPrincipal.fromDatabase(user);
 
         String access = jwtService.generateAccessToken(principal);
         String refresh = jwtService.generateRefreshToken(principal);
@@ -147,7 +146,7 @@ public class AuthHelper {
 
         userRepo.save(user);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, AuditAction.LOGIN_ATTEMPT,
+        eventPublisher.publishEvent(AuditRequest.log(user, LOGIN_ATTEMPT,
                 "User attempted login with incorrect password",
                 Map.of("message", "Failed login attempts: " + newAttempts)));
     }
@@ -171,7 +170,7 @@ public class AuthHelper {
 
             } else {
                 eventPublisher.publishEvent(AuditRequest.log(
-                        user, AuditAction.LOGIN_FAILURE, "Login failed",
+                        user, LOGIN_FAILURE, "Login failed",
                             Map.of("message", "User account locked temporarily")));
 
                 throw new AuthenticationException("Account is temporarily locked. Try again later.");

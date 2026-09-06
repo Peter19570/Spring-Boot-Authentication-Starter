@@ -18,6 +18,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.io.UnsupportedEncodingException;
 
@@ -77,7 +78,8 @@ public class GlobalExceptionHandler {
             NotFoundException.class,
             ValidationException.class,
             MethodArgumentNotValidException.class,
-            HttpMessageNotReadableException.class
+            HttpMessageNotReadableException.class,
+            HandlerMethodValidationException.class
     })
     public ResponseEntity<ApiResponse<String>> handleBadException(Exception ex){
         return ResponseEntity

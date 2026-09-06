@@ -67,7 +67,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIdentifier(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
+        String forwarded = request.getHeader(HEADER_NAME);
         if (forwarded != null && !forwarded.isEmpty()) {
             return forwarded.split(",")[0].trim();
         }
@@ -76,7 +76,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private void sendRateLimitResponse(HttpServletResponse response, long retryAfter) throws IOException {
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-        response.setContentType("application/json");
+        response.setContentType(CONTENT_TYPE);
         response.getWriter().write(
                 objectMapper.writeValueAsString(
                         Map.of("message", "Too many requests", "retryAfter", retryAfter))
