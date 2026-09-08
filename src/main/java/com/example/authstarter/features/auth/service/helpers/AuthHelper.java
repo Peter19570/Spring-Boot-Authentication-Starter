@@ -123,12 +123,13 @@ public class AuthHelper {
 
         String access = jwtService.generateAccessToken(principal);
         String refresh = jwtService.generateRefreshToken(principal);
-        long accessExpiration = jwtService.getAccessExpirationInSeconds();
+        Duration refreshExpiration = jwtService.getRefreshTokenExpiration();
+        long accessExpiration = jwtService.getAccessTokenExpiration().toSeconds();
 
         RefreshToken rt = new RefreshToken();
         rt.setUser(user);
         rt.setTokenHash(hashToken(refresh));
-        rt.setExpiresAt(Instant.now().plus(Duration.ofDays(7)));
+        rt.setExpiresAt(Instant.now().plus(refreshExpiration));
         refreshTokenRepo.save(rt);
 
         return new TokenResponse(access, refresh, accessExpiration);

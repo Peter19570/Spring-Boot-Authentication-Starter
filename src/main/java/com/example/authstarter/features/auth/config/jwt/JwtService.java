@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -26,9 +27,11 @@ public class JwtService {
     @Value("${jwt.token.secret.key}")
     private String secretKey;
 
+    @Getter
     @Value("${jwt.token.access.token.expiration:PT15M}")
     private Duration accessTokenExpiration;
 
+    @Getter
     @Value("${jwt.token.refresh.token.expiration:P7D}")
     private Duration refreshTokenExpiration;
 
@@ -60,10 +63,6 @@ public class JwtService {
     public JwtClaims extractToken(String token){
         Claims claims = extractAllClaims(token);
         return JwtClaims.extracted(claims);
-    }
-
-    public long getAccessExpirationInSeconds() {
-        return accessTokenExpiration.toSeconds();
     }
 
     public Claims extractAllClaims(String token) {
