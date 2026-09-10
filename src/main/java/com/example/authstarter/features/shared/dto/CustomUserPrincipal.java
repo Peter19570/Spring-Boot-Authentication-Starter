@@ -9,14 +9,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-public record CustomUserPrincipal(
+public record CustomUserPrincipal( // Adjust to add more info into context holder
         UUID id,
         String email,
         String password,
         Collection<? extends GrantedAuthority> authorities
-
-        // I'm keeping it light here... u can add fields u deem necessary, your call...
-
 ) implements UserDetails {
 
     public static CustomUserPrincipal fromDatabase(User user){

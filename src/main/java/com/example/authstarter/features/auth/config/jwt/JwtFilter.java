@@ -44,12 +44,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String jwt = getTokenFromRequest(request);
 
-        if (jwt == null) {
+        if (request.getMethod().equals(OPTIONS_HTTP_METHOD)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (request.getMethod().equals(OPTIONS_HTTP_METHOD)) {
+        if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }

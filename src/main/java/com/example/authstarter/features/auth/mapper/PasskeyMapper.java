@@ -16,6 +16,8 @@ import java.util.UUID;
 )
 public interface PasskeyMapper {
 
+    List<PasskeyResponse> toDto(List<Passkey> passkey);
+
     @Mapping(
             target = "credentialId",
             expression = "java(credentialRecord.getCredentialId().toBase64UrlString())"
@@ -41,8 +43,6 @@ public interface PasskeyMapper {
             expression = "java(credentialRecord.getAttestationClientDataJSON() != null ? credentialRecord.getAttestationClientDataJSON().toBase64UrlString() : null)"
     )
     Passkey toEntity(CredentialRecord credentialRecord);
-
-    List<PasskeyResponse> toDto(List<Passkey> passkey);
 
     @Mapping(
             target = "credentialId",
