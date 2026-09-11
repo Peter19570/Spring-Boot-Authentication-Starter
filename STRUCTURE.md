@@ -44,6 +44,7 @@ example/
     │   │   │   └── userservice
     │   │   │       └── CustomUserDetailsService.java
     │   │   ├── constants
+    │   │   │   ├── AsyncConstants.java
     │   │   │   ├── CacheConstants.java
     │   │   │   ├── CorsConstants.java
     │   │   │   ├── JwtConstants.java
@@ -108,6 +109,8 @@ example/
     │   │   │   ├── ClientInfo.java
     │   │   │   ├── PageResponse.java
     │   │   │   └── UserPrincipal.java
+    │   │   ├── exceptions
+    │   │   │   └── AppException.java
     │   │   ├── model
     │   │   │   └── BaseEntity.java
     │   │   └── service
