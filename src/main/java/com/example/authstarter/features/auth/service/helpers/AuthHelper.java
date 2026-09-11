@@ -12,7 +12,7 @@ import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
 import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
@@ -35,6 +35,7 @@ import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
 import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
+import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
 
 @Component
 @RequiredArgsConstructor
@@ -66,7 +67,7 @@ public class AuthHelper {
 
                     eventPublisher.publishEvent(AuditRequest.log(
                             user, REGISTER,
-                            "User created account with Google login", Map.of()));
+                            "User created account with Google login", getClientInfo(), Map.of()));
 
                     return userRepo.save(user);
                 });
@@ -81,7 +82,7 @@ public class AuthHelper {
 
             eventPublisher.publishEvent(AuditRequest.log(
                     existingUser, SOCIAL_LINK,
-                    "Google account linked successfully", Map.of()));
+                    "Google account linked successfully", getClientInfo(), Map.of()));
         }
 
         resolveAuthProviders(existingUser, "GOOGLE");
@@ -113,13 +114,13 @@ public class AuthHelper {
 
     public AuthResponse createAuthResponse(User user, AuditAction auditAction){
         eventPublisher.publishEvent(AuditRequest.log(
-                user, auditAction, "User logged in successfully", Map.of()));
+                user, auditAction, "User logged in successfully", getClientInfo(), Map.of()));
 
         return new AuthResponse(true, createTokenResponse(user), userMapper.toDto(user));
     }
 
     public TokenResponse createTokenResponse(User user){
-        CustomUserPrincipal principal = CustomUserPrincipal.fromDatabase(user);
+        UserPrincipal principal = UserPrincipal.fromDatabase(user);
 
         String access = jwtService.generateAccessToken(principal);
         String refresh = jwtService.generateRefreshToken(principal);
@@ -148,7 +149,7 @@ public class AuthHelper {
         userRepo.save(user);
 
         eventPublisher.publishEvent(AuditRequest.log(user, LOGIN_ATTEMPT,
-                "User attempted login with incorrect password",
+                "User attempted login with incorrect password", getClientInfo(),
                 Map.of("message", "Failed login attempts: " + newAttempts)));
     }
 
@@ -171,7 +172,7 @@ public class AuthHelper {
 
             } else {
                 eventPublisher.publishEvent(AuditRequest.log(
-                        user, LOGIN_FAILURE, "Login failed",
+                        user, LOGIN_FAILURE, "Login failed", getClientInfo(),
                             Map.of("message", "User account locked temporarily")));
 
                 throw new AuthenticationException("Account is temporarily locked. Try again later.");

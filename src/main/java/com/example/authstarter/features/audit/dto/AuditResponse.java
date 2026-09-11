@@ -13,6 +13,8 @@ public record AuditResponse(
         String fullName,
         AuditAction action,
         String description,
+        String ipAddress,
+        String userAgent,
         Map<String, Object> metadata,
         Instant createdAt
 ) {

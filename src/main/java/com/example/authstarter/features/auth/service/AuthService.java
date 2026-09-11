@@ -59,6 +59,7 @@ import static com.example.authstarter.features.auth.constants.CacheConstants.ALL
 import static com.example.authstarter.features.auth.constants.CacheConstants.USERS;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
+import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
 
 @Service
 @Transactional
@@ -161,7 +162,7 @@ public class AuthService {
 
         String message = (revoked) ? "User logout success" : "User logged out without token revoke";
 
-        eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, message, Map.of()));
+        eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, message, getClientInfo(), Map.of()));
     }
 
     @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
@@ -218,7 +219,7 @@ public class AuthService {
 
             eventPublisher.publishEvent(
                     AuditRequest.log(existingUser, PASSKEY_LINK,
-                            "Passkey linked successfully", Map.of()));
+                            "Passkey linked successfully", getClientInfo(), Map.of()));
 
             creationOptionsRepository.save(servletRequest, servletResponse, null);
             return record;
@@ -298,7 +299,7 @@ public class AuthService {
         user.setEmailVerified(true);
 
         eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_VERIFIED,
-                "Email verified successfully", Map.of()));
+                "Email verified successfully", getClientInfo(), Map.of()));
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
@@ -326,7 +327,7 @@ public class AuthService {
         user.setEmail(newEmail);
 
         eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_CHANGED,
-                "User has changed email", Map.of(
+                "User has changed email", getClientInfo(), Map.of(
                         "old email", oldEmail, "new email", newEmail)));
     }
 
@@ -360,7 +361,7 @@ public class AuthService {
         user.setLockedUntil(null);
 
         eventPublisher.publishEvent(AuditRequest.log(user, PASSWORD_RESET,
-                "User reset password successfully", Map.of()));
+                "User reset password successfully", getClientInfo(), Map.of()));
     }
 
 }

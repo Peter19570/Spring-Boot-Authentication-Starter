@@ -1,7 +1,7 @@
 package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.auth.dto.internal.JwtClaims;
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.example.authstarter.features.shared.dto.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -35,7 +35,7 @@ public class JwtService {
     @Value("${jwt.token.refresh.token.expiration:P7D}")
     private Duration refreshTokenExpiration;
 
-    public String generateAccessToken(CustomUserPrincipal principal) {
+    public String generateAccessToken(UserPrincipal principal) {
         Map<String, Object> claims = new HashMap<>();
         List<String> roles = principal.getAuthorities()
                 .stream()
@@ -49,7 +49,7 @@ public class JwtService {
         return createToken(claims, principal.id().toString(), accessTokenExpiration.toMillis());
     }
 
-    public String generateRefreshToken(CustomUserPrincipal principal) {
+    public String generateRefreshToken(UserPrincipal principal) {
         Map<String, Object> claims = new HashMap<>();
 
         claims.put(TOKEN_TYPE, REFRESH_VALUE);

@@ -1,7 +1,7 @@
 package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.auth.dto.internal.JwtClaims;
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -57,7 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             JwtClaims jwtClaims = jwtService.extractToken(jwt);
 
-            CustomUserPrincipal principal = CustomUserPrincipal.fromToken(
+            UserPrincipal principal = UserPrincipal.fromToken(
                     jwtClaims.userId(), jwtClaims.email(), jwtClaims.authorities());
 
             if (jwtService.isTokenValid(jwtClaims.expired())) {

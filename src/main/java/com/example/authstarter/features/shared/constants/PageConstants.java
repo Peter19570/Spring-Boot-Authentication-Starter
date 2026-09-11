@@ -1,8 +1,8 @@
 package com.example.authstarter.features.shared.constants;
 
-public final class ControllerConstants {
+public final class PageConstants {
 
-    private ControllerConstants () {}
+    private PageConstants() {}
 
     public static final int MAX_PAGE_SIZE = 50;
 }

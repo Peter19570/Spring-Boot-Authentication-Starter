@@ -7,7 +7,7 @@ import com.example.authstarter.features.auth.dto.response.PasskeyResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
 import com.example.authstarter.features.auth.service.AuthService;
 import com.example.authstarter.features.shared.dto.ApiResponse;
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.example.authstarter.features.shared.dto.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,7 +74,7 @@ public class AuthController {
     @Operation(summary = "Log out authenticated user.")
     public ResponseEntity<Void> logout(
             @Valid @RequestBody RefreshTokenRequest request,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         authService.logout(request, principal.id());
         return ResponseEntity.noContent().build();
@@ -109,7 +109,7 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Resend email verification token.")
     public ResponseEntity<Void> resendVerificationEmail(
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         authService.resendVerificationEmail(principal.id());
         return ResponseEntity.noContent().build();
@@ -119,7 +119,7 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Request verification token to change email")
     public ResponseEntity<Void> requestChange(
-            @AuthenticationPrincipal CustomUserPrincipal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody EmailChangeRequest request
     ) {
         authService.requestEmailChange(principal.id(), request);
@@ -159,7 +159,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<CredentialRecord>> finishPasskeyRegistration(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             @RequestBody PasskeyRegistrationRequest request,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         CredentialRecord response = authService.finishPasskeyRegistration(
                 servletRequest, servletResponse, request, principal.id());
@@ -191,7 +191,7 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Shows list of passkeys user has created")
     public ResponseEntity<ApiResponse<List<PasskeyResponse>>> getAllPasskeys(
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
       List<PasskeyResponse> responses = authService.findAllUserPasskeys(principal.id());
       return ResponseEntity.ok(ApiResponse.success("User Passkey List", responses));
@@ -201,7 +201,7 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Remove a registered passkey.")
     public ResponseEntity<Void> deleteSavedPasskey(
-            @AuthenticationPrincipal CustomUserPrincipal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID passkeyId
     ) {
         authService.deleteSavedPasskey(principal.id(), passkeyId);

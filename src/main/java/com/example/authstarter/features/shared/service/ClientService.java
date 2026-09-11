@@ -7,7 +7,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component
-public class ClientInfoService {
+public class ClientService {
 
     public static ClientInfo getClientInfo(){
         HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder

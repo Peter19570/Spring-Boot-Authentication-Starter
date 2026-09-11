@@ -25,6 +25,7 @@ import java.util.UUID;
 import static com.example.authstarter.features.audit.enums.AuditAction.ACCOUNT_SOFT_DELETED;
 import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
 import static com.example.authstarter.features.auth.constants.CacheConstants.USERS;
+import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
 
 @Service
 @Transactional
@@ -70,6 +71,6 @@ public class UserService {
         passkeyRepo.deleteAllByUserId(currentUser.getId());
 
         eventPublisher.publishEvent(AuditRequest.log(currentUser, ACCOUNT_SOFT_DELETED,
-                "User account has been soft deleted", Map.of()));
+                "User account has been soft deleted", getClientInfo(), Map.of()));
     }
 }

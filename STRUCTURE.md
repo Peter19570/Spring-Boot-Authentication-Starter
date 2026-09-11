@@ -101,13 +101,17 @@ example/
     │   │   │   ├── AppConfig.java
     │   │   │   └── SwaggerConfig.java
     │   │   ├── constants
-    │   │   │   └── ControllerConstants.java
+    │   │   │   ├── ClientConstants.java
+    │   │   │   └── PageConstants.java
     │   │   ├── dto
     │   │   │   ├── ApiResponse.java
-    │   │   │   ├── CustomUserPrincipal.java
-    │   │   │   └── PageResponse.java
-    │   │   └── model
-    │   │       └── BaseEntity.java
+    │   │   │   ├── ClientInfo.java
+    │   │   │   ├── PageResponse.java
+    │   │   │   └── UserPrincipal.java
+    │   │   ├── model
+    │   │   │   └── BaseEntity.java
+    │   │   └── service
+    │   │       └── ClientService.java
     │   └── user
     │       ├── controller
     │       │   └── UserController.java

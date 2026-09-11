@@ -9,15 +9,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-public record CustomUserPrincipal( // Adjust to add more info into context holder
+public record UserPrincipal( // Adjust to add more info into context holder
         UUID id,
         String email,
         String password,
         Collection<? extends GrantedAuthority> authorities
 ) implements UserDetails {
 
-    public static CustomUserPrincipal fromDatabase(User user){
-        return new CustomUserPrincipal(
+    public static UserPrincipal fromDatabase(User user){
+        return new UserPrincipal(
                 user.getId(),
                 user.getEmail(),
                 user.getPassword(),
@@ -27,12 +27,12 @@ public record CustomUserPrincipal( // Adjust to add more info into context holde
         );
     }
 
-    public static CustomUserPrincipal fromToken(
+    public static UserPrincipal fromToken(
             UUID userId,
             String email,
             Collection<? extends GrantedAuthority> authorities){
 
-        return new CustomUserPrincipal(userId, email, null, authorities);
+        return new UserPrincipal(userId, email, null, authorities);
     }
 
     @Override

@@ -33,6 +33,8 @@ public class AuditService {
                 .email(request.user().getEmail())
                 .fullName(getUserFullName(request.user()))
                 .description(request.description())
+                .ipAddress(request.ipAddress())
+                .userAgent(request.userAgent())
                 .action(request.auditAction())
                 .metadata(request.metaData())
                 .build();

@@ -1,6 +1,6 @@
 package com.example.authstarter.features.auth.config.userservice;
 
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepo.findByEmail(username).orElseThrow(() ->
                 new UsernameNotFoundException("User not found"));
-        return CustomUserPrincipal.fromDatabase(user);
+        return UserPrincipal.fromDatabase(user);
     }
 
 }

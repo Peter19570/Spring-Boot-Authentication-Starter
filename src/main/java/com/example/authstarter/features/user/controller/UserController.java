@@ -2,7 +2,7 @@ package com.example.authstarter.features.user.controller;
 
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
 import com.example.authstarter.features.shared.dto.ApiResponse;
-import com.example.authstarter.features.shared.dto.CustomUserPrincipal;
+import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,7 +24,7 @@ public class UserController {
     @GetMapping("/me")
     @Operation(summary = "Retrieve the authenticated user's profile.")
     public ResponseEntity<ApiResponse<UserDetailedResponse>> getCurrentUser(
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         UserDetailedResponse response = userService.getCurrentUser(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Current User Information", response));
@@ -33,7 +33,7 @@ public class UserController {
     @PostMapping("/me/deletion-request")
     @Operation(summary = "Request account deletion.")
     public ResponseEntity<Void> requestDelete(
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         userService.initiateDeletion(principal.id());
         return ResponseEntity.noContent().build();
@@ -42,7 +42,7 @@ public class UserController {
     @DeleteMapping("/me")
     @Operation(summary = "Delete authenticated user's account.")
     public ResponseEntity<Void> confirmDelete(
-            @AuthenticationPrincipal CustomUserPrincipal principal,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody AccountDeletionRequest request
     ) {
         userService.confirmSoftDelete(principal.id(), request);
