@@ -1,7 +1,10 @@
 package com.example.authstarter.features.auth.exceptions;
 
-public class ValidationException extends RuntimeException {
+import com.example.authstarter.features.shared.exceptions.AppException;
+import org.springframework.http.HttpStatus;
+
+public class ValidationException extends AppException {
     public ValidationException(String message) {
-        super(message);
+        super(message, HttpStatus.BAD_REQUEST);
     }
 }

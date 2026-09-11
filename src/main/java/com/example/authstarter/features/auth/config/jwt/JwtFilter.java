@@ -1,6 +1,8 @@
 package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.auth.dto.internal.JwtClaims;
+import com.example.authstarter.features.auth.exceptions.AuthenticationException;
+import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
@@ -62,7 +64,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (jwtService.isTokenValid(jwtClaims.expired())) {
                 if (!jwtClaims.tokenType().equals(ACCESS_VALUE)){
-                    throw new IllegalStateException("Invalid token type. Access token required.");
+                    throw new AuthenticationException("Invalid token type. Access token required.");
                 }
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -74,7 +76,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
 
-        } catch (JwtException | UsernameNotFoundException | IllegalStateException e) {
+        } catch (JwtException | UsernameNotFoundException | AuthenticationException e) {
             handleException(response, "Unauthorized: " + e.getMessage());
         }
     }

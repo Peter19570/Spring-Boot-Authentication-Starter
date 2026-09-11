@@ -204,7 +204,7 @@ public class AuthHelper {
                     .digest(rawToken.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Hashing failed", e);
+            throw new IllegalStateException("Hashing failed", e);
         }
     }
 }

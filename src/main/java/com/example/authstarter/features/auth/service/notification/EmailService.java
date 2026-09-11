@@ -17,6 +17,8 @@ import org.thymeleaf.context.Context;
 import java.io.UnsupportedEncodingException;
 import java.time.Year;
 
+import static com.example.authstarter.features.auth.constants.AsyncConstants.EMAIL_EXECUTOR;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -33,7 +35,7 @@ public class EmailService {
     @Value("${spring.application.name}")
     private String appName;
 
-    @Async("emailExecutor")
+    @Async(EMAIL_EXECUTOR)
     public void sendVerificationEmail(User user, String token) {
         String link = frontendUrl + "/verify-email?token=" + token;
 
@@ -49,7 +51,7 @@ public class EmailService {
         }
     }
 
-    @Async("emailExecutor")
+    @Async(EMAIL_EXECUTOR)
     public void sendPasswordResetEmail(User user, String token) {
         String link = frontendUrl + "/reset-password?token=" + token;
 
@@ -65,7 +67,7 @@ public class EmailService {
         }
     }
 
-    @Async("emailExecutor")
+    @Async(EMAIL_EXECUTOR)
     public void sendSocialLoginReminder(User user, String provider) {
         String formattedProvider = provider.substring(0, 1).toUpperCase() +
                 provider.substring(1).toLowerCase();
@@ -84,7 +86,7 @@ public class EmailService {
         }
     }
 
-    @Async("emailExecutor")
+    @Async(EMAIL_EXECUTOR)
     public void sendAccountDeletionCode(User user, String code) {
         Context context = new Context();
         context.setVariable("greetingName", getGreetingName(user));
@@ -97,7 +99,7 @@ public class EmailService {
         sendHtmlEmail(user.getEmail(), subject, htmlContent);
     }
 
-    @Async("emailExecutor")
+    @Async(EMAIL_EXECUTOR)
     public void sendEmailChangeConfirmation(String newEmail, String token) {
         String confirmationUrl = frontendUrl + "/confirm-email?token=" + token;
 

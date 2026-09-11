@@ -7,17 +7,19 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
+import static com.example.authstarter.features.auth.constants.AsyncConstants.*;
+
 @Configuration
 @EnableAsync
 public class AsyncConfig {
 
-    @Bean(name = "emailExecutor")
+    @Bean(name = EMAIL_EXECUTOR)
     public Executor emailExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(10);
-        executor.setQueueCapacity(500);
-        executor.setThreadNamePrefix("EmailThread-");
+        executor.setCorePoolSize(CORE_POOL_SIZE);
+        executor.setMaxPoolSize(MAX_POOL_SIZE);
+        executor.setQueueCapacity(QUEUE_CAPACITY);
+        executor.setThreadNamePrefix(EMAIL_THREAD);
         executor.initialize();
         return executor;
     }

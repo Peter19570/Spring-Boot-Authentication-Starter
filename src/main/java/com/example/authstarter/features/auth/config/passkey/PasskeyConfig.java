@@ -36,7 +36,6 @@ public class PasskeyConfig implements UserCredentialRepository {
                 .orElseGet(() -> passkeyMapper.toEntity(credentialRecord));
 
         passkeyMapper.updateEntity(credentialRecord, passkey);
-
         passkeyRepo.save(passkey);
     }
 

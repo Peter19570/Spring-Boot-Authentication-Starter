@@ -10,6 +10,7 @@ import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.response.PasskeyOptionsResponse;
 import com.example.authstarter.features.auth.dto.response.PasskeyResponse;
 import com.example.authstarter.features.auth.dto.response.TokenResponse;
+import com.example.authstarter.features.auth.exceptions.AlreadyExistException;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
 import com.example.authstarter.features.auth.exceptions.NotFoundException;
 import com.example.authstarter.features.auth.exceptions.ValidationException;
@@ -134,7 +135,7 @@ public class AuthService {
         JwtClaims jwtClaims = jwtService.extractToken(token);
 
         if (!jwtClaims.tokenType().equals(REFRESH_VALUE)){
-            throw new IllegalStateException("Invalid token type. Refresh token required.");
+            throw new AuthenticationException("Invalid token type. Refresh token required.");
         }
 
         User user = authHelper.fetchUser(jwtClaims.userId());
@@ -171,7 +172,7 @@ public class AuthService {
             throws GeneralSecurityException, IOException {
         GoogleIdToken idToken = verifier.verify(request.idToken());
 
-        if (idToken == null){throw new ValidationException("Google token is invalid");}
+        if (idToken == null){throw new AuthenticationException("Google token is invalid");}
 
         GoogleIdToken.Payload payload = idToken.getPayload();
 
@@ -225,7 +226,7 @@ public class AuthService {
             return record;
         }
 
-        throw new IllegalStateException("Registration session missing or expired");
+        throw new ValidationException("Registration session missing or expired");
     }
 
     public PublicKeyCredentialRequestOptions startPasskeyAuthentication(
@@ -263,7 +264,7 @@ public class AuthService {
             return authHelper.createAuthResponse(user, PASSKEY_LOGIN);
         }
 
-        throw new IllegalStateException("Login session missing or expired");
+        throw new ValidationException("Login session missing or expired");
 
     }
 
@@ -284,7 +285,7 @@ public class AuthService {
         User user = authHelper.fetchUser(userId);
 
         if (user.isEmailVerified()){
-            throw new IllegalStateException("Email has been verified already");
+            throw new AlreadyExistException("Email has been verified already");
         }
 
         String rawToken = evtService.generateEVT(user.getId().toString(), null);
