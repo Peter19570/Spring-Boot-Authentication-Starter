@@ -25,7 +25,7 @@ import java.util.UUID;
 import static com.example.authstarter.features.audit.enums.AuditAction.ACCOUNT_SOFT_DELETED;
 import static com.example.authstarter.features.shared.constants.CacheConstants.ALL_USERS;
 import static com.example.authstarter.features.shared.constants.CacheConstants.USER;
-import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
+import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Service
 @Transactional

@@ -115,8 +115,8 @@ example/
     │   │   │   └── AppException.java
     │   │   ├── model
     │   │   │   └── BaseEntity.java
-    │   │   └── service
-    │   │       └── ClientService.java
+    │   │   └── utils
+    │   │       └── ClientInfoUtils.java
     │   └── user
     │       ├── controller
     │       │   └── UserController.java

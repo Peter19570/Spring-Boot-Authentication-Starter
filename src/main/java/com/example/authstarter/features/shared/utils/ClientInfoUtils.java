@@ -1,4 +1,4 @@
-package com.example.authstarter.features.shared.service;
+package com.example.authstarter.features.shared.utils;
 
 import com.example.authstarter.features.shared.dto.ClientInfo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,7 +7,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component
-public class ClientService {
+public class ClientInfoUtils {
 
     public static ClientInfo getClientInfo(){
         HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder

@@ -60,7 +60,7 @@ import static com.example.authstarter.features.shared.constants.CacheConstants.A
 import static com.example.authstarter.features.shared.constants.CacheConstants.USER;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
-import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
+import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Service
 @Transactional
