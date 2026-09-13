@@ -1,4 +1,4 @@
-package com.example.authstarter.features.shared.config;
+package com.example.authstarter.features.shared.config.swagger;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;

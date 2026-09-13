@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
-import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
+import static com.example.authstarter.features.shared.constants.CacheConstants.ALL_USERS;
 import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
 
 @Component

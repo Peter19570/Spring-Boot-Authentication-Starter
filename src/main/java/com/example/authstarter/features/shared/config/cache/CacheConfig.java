@@ -1,4 +1,4 @@
-package com.example.authstarter.features.auth.config.cache;
+package com.example.authstarter.features.shared.config.cache;
 
 import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
-import static com.example.authstarter.features.auth.constants.CacheConstants.CACHE_NAMES;
+import static com.example.authstarter.features.shared.constants.CacheConstants.CACHE_NAMES;
 
 @Configuration
 @EnableCaching

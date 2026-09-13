@@ -56,8 +56,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
-import static com.example.authstarter.features.auth.constants.CacheConstants.ALL_USERS;
-import static com.example.authstarter.features.auth.constants.CacheConstants.USERS;
+import static com.example.authstarter.features.shared.constants.CacheConstants.ALL_USERS;
+import static com.example.authstarter.features.shared.constants.CacheConstants.USER;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 import static com.example.authstarter.features.shared.service.ClientService.getClientInfo;
@@ -90,7 +90,7 @@ public class AuthService {
      * MAJOR AUTHENTICATION METHODS HERE
      */
 
-    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
     @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
@@ -108,7 +108,7 @@ public class AuthService {
         return authHelper.createAuthResponse(savedUser, REGISTER);
     }
 
-    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
     @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse login(AuthRequest request) {
         User user = userRepo.findByEmail(request.email())
@@ -148,7 +148,7 @@ public class AuthService {
         return authHelper.createTokenResponse(user);
     }
 
-    @CachePut(cacheNames = USERS, key = "#userId")
+    @CachePut(cacheNames = USER, key = "#userId")
     @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public void logout(RefreshTokenRequest request, UUID userId) {
         User user = authHelper.fetchUser(userId);
@@ -166,7 +166,7 @@ public class AuthService {
         eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, message, getClientInfo(), Map.of()));
     }
 
-    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
     @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse googleLogin(GoogleRequest request)
             throws GeneralSecurityException, IOException {
@@ -241,7 +241,7 @@ public class AuthService {
         return options;
     }
 
-    @CachePut(cacheNames = USERS, key = "#result.userInfo.id")
+    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
     @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse finishPasskeyAuthentication(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,

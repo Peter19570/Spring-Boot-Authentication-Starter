@@ -1,4 +1,4 @@
-package com.example.authstarter.features.shared.config;
+package com.example.authstarter.features.shared.config.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;

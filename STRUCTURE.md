@@ -24,8 +24,6 @@ example/
     │   │   ├── config
     │   │   │   ├── async
     │   │   │   │   └── AsyncConfig.java
-    │   │   │   ├── cache
-    │   │   │   │   └── CacheConfig.java
     │   │   │   ├── cors
     │   │   │   │   └── CorsConfig.java
     │   │   │   ├── jwt
@@ -45,7 +43,6 @@ example/
     │   │   │       └── CustomUserDetailsService.java
     │   │   ├── constants
     │   │   │   ├── AsyncConstants.java
-    │   │   │   ├── CacheConstants.java
     │   │   │   ├── CorsConstants.java
     │   │   │   ├── JwtConstants.java
     │   │   │   ├── RateLimitConstants.java
@@ -99,9 +96,14 @@ example/
     │   │       └── AuthService.java
     │   ├── shared
     │   │   ├── config
-    │   │   │   ├── AppConfig.java
-    │   │   │   └── SwaggerConfig.java
+    │   │   │   ├── app
+    │   │   │   │   └── AppConfig.java
+    │   │   │   ├── cache
+    │   │   │   │   └── CacheConfig.java
+    │   │   │   └── swagger
+    │   │   │       └── SwaggerConfig.java
     │   │   ├── constants
+    │   │   │   ├── CacheConstants.java
     │   │   │   ├── ClientConstants.java
     │   │   │   └── PageConstants.java
     │   │   ├── dto
