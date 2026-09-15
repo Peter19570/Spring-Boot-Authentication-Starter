@@ -168,14 +168,8 @@ public class AuthService {
 
     @CachePut(cacheNames = USER, key = "#result.userInfo.id")
     @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
-    public AuthResponse googleLogin(GoogleRequest request)
-            throws GeneralSecurityException, IOException {
-        GoogleIdToken idToken = verifier.verify(request.idToken());
-
-        if (idToken == null){throw new AuthenticationException("Google token is invalid");}
-
-        GoogleIdToken.Payload payload = idToken.getPayload();
-
+    public AuthResponse googleLogin(GoogleRequest request) {
+        GoogleIdToken.Payload payload = authHelper.verifyGoogleToken(request.idToken());
         User user = authHelper.syncGoogleWithLocal(payload);
         return authHelper.createAuthResponse(user, OAUTH_LOGIN);
     }

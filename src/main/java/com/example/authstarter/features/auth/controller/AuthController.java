@@ -63,8 +63,8 @@ public class AuthController {
     @PostMapping("/google")
     @Operation(summary = "Authenticate with Google.")
     public ResponseEntity<ApiResponse<AuthResponse>> google(
-            @Valid @RequestBody GoogleRequest request)
-            throws GeneralSecurityException, IOException {
+            @Valid @RequestBody GoogleRequest request
+    ) {
         AuthResponse response = authService.googleLogin(request);
         return ResponseEntity.ok(ApiResponse.success("Google login success", response));
     }
@@ -98,7 +98,7 @@ public class AuthController {
     public ResponseEntity<Void> verifyEmail(
             @RequestParam
             @NotBlank(message = "Token is required")
-            @Size(min = 36, max = 36, message = "UUID must be exactly 36 characters")
+            @Size(min = 36, max = 36, message = "Token must be exactly 36 characters")
             String token
     ) {
         authService.verifyEmail(token);
@@ -131,7 +131,7 @@ public class AuthController {
     public ResponseEntity<Void> confirmChange(
             @RequestParam
             @NotBlank(message = "Token is required")
-            @Size(min = 36, max = 36, message = "UUID must be exactly 36 characters")
+            @Size(min = 36, max = 36, message = "Token must be exactly 36 characters")
             String token
     ) {
         authService.confirmEmailChange(token);
@@ -197,7 +197,7 @@ public class AuthController {
       return ResponseEntity.ok(ApiResponse.success("User Passkey List", responses));
     }
 
-    @DeleteMapping("/passkeys/{id}")
+    @DeleteMapping("/passkeys/{passkeyId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Remove a registered passkey.")
     public ResponseEntity<Void> deleteSavedPasskey(

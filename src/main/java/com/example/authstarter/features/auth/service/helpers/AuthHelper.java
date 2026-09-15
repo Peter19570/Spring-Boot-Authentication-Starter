@@ -17,6 +17,7 @@ import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,7 +25,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -45,6 +48,7 @@ public class AuthHelper {
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
     private final JwtService jwtService;
+    private final GoogleIdTokenVerifier verifier;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -58,6 +62,21 @@ public class AuthHelper {
     public User fetchUserFresh(UUID userId){
         return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    public GoogleIdToken.Payload verifyGoogleToken(String idTokenString) {
+        GoogleIdToken idToken;
+        try {
+            idToken = verifier.verify(idTokenString);
+        } catch (GeneralSecurityException | IOException e) {
+            throw new AuthenticationException("Failed to verify Google token");
+        }
+
+        if (idToken == null) {
+            throw new AuthenticationException("Google token is invalid");
+        }
+
+        return idToken.getPayload();
     }
 
     public User syncGoogleWithLocal(GoogleIdToken.Payload payload){
