@@ -66,6 +66,7 @@ public class AuthHelper {
 
     public GoogleIdToken.Payload verifyGoogleToken(String idTokenString) {
         GoogleIdToken idToken;
+
         try {
             idToken = verifier.verify(idTokenString);
         } catch (GeneralSecurityException | IOException e) {
@@ -80,6 +81,8 @@ public class AuthHelper {
     }
 
     public User syncGoogleWithLocal(GoogleIdToken.Payload payload){
+        boolean isNewUser = userRepo.findByEmail(payload.getEmail()).isEmpty();
+
         User existingUser =  userRepo.findByEmail(payload.getEmail())
                 .orElseGet(() -> {
                     User user = authMapper.toEntityFromGooglePayload(payload);
@@ -95,8 +98,9 @@ public class AuthHelper {
         validateAccountNotDeleted(existingUser);
         resetAccountLock(existingUser);
 
-        if (existingUser.getFirstName().equals("not-set")
-                || existingUser.getLastName().equals("not-set")){
+        if (!isNewUser && (existingUser.getFirstName().equals("not-set")
+                || existingUser.getLastName().equals("not-set"))) {
+
             authMapper.updateEntityFromGooglePayload(payload, existingUser);
 
             eventPublisher.publishEvent(AuditRequest.log(

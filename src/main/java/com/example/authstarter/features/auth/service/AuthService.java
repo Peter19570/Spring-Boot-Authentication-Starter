@@ -27,7 +27,6 @@ import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -47,9 +46,7 @@ import org.springframework.security.web.webauthn.registration.PublicKeyCredentia
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +73,6 @@ public class AuthService {
     private final PasskeyRepo passkeyRepo;
     private final EmailService emailService;
     private final PasskeyMapper passkeyMapper;
-    private final GoogleIdTokenVerifier verifier;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
