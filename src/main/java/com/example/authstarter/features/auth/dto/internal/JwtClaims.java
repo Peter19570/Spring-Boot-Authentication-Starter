@@ -17,9 +17,16 @@ public record JwtClaims( // Adjust to add more extracted claims as needed
     List<SimpleGrantedAuthority> authorities
 ) {
     public static JwtClaims extracted(Claims claims){
-        List<String> rawRoles = claims.get(GRANTED_AUTHORITIES, List.class);
+        List<?> rawRoles = claims.get(GRANTED_AUTHORITIES, List.class);
 
-        List<SimpleGrantedAuthority> authorities = rawRoles.stream()
+        List<String> roles = rawRoles == null
+                ? List.of()
+                : rawRoles.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .toList();
+
+        List<SimpleGrantedAuthority> authorities = roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();
 
