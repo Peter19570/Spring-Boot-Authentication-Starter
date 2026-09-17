@@ -30,6 +30,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.context.ApplicationEventPublisher;
@@ -53,10 +55,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
-import static com.example.authstarter.features.shared.constants.CacheConstants.ALL_USERS;
-import static com.example.authstarter.features.shared.constants.CacheConstants.USER;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
+import static com.example.authstarter.features.shared.constants.CacheConstants.*;
 import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Service
@@ -86,8 +87,6 @@ public class AuthService {
      * MAJOR AUTHENTICATION METHODS HERE
      */
 
-    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse register(AuthRequest request) {
         String email = request.email();
 
@@ -101,11 +100,10 @@ public class AuthService {
         String rawToken = evtService.generateEVT(savedUser.getId().toString(), null);
         emailService.sendVerificationEmail(savedUser, rawToken);
 
+        authHelper.cacheUser(savedUser);
         return authHelper.createAuthResponse(savedUser, REGISTER);
     }
 
-    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse login(AuthRequest request) {
         User user = userRepo.findByEmail(request.email())
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -118,6 +116,8 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
             authHelper.resetAccountLock(user);
+            authHelper.cacheUser(user);
+
             return authHelper.createAuthResponse(user, LOCAL_LOGIN);
 
         } catch (BadCredentialsException e) {
@@ -134,7 +134,7 @@ public class AuthService {
             throw new AuthenticationException("Invalid token type. Refresh token required.");
         }
 
-        User user = authHelper.fetchUser(jwtClaims.userId());
+        User user = authHelper.getUser(jwtClaims.userId());
 
         RefreshToken storedToken = refreshTokenRepo.findByTokenHash(hashToken(token))
                 .filter(rt -> !rt.isRevoked() && rt.getExpiresAt().isAfter(Instant.now()))
@@ -144,10 +144,9 @@ public class AuthService {
         return authHelper.createTokenResponse(user);
     }
 
-    @CachePut(cacheNames = USER, key = "#userId")
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
+    @CacheEvict(cacheNames = USERS, key = "#userId")
     public void logout(RefreshTokenRequest request, UUID userId) {
-        User user = authHelper.fetchUser(userId);
+        User user = authHelper.getUser(userId);
 
         boolean revoked = refreshTokenRepo.findByTokenHash(request.refreshToken())
                 .map(token -> {
@@ -162,11 +161,12 @@ public class AuthService {
         eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, message, getClientInfo(), Map.of()));
     }
 
-    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse googleLogin(GoogleRequest request) {
         GoogleIdToken.Payload payload = authHelper.verifyGoogleToken(request.idToken());
+
         User user = authHelper.syncGoogleWithLocal(payload);
+        authHelper.cacheUser(user);
+
         return authHelper.createAuthResponse(user, OAUTH_LOGIN);
     }
 
@@ -205,7 +205,7 @@ public class AuthService {
 
             CredentialRecord record = relyingPartyOperations.registerCredential(registrationRequest);
 
-            User existingUser = authHelper.fetchUserFresh(userId);
+            User existingUser = authHelper.getUserFromDatabase(userId);
             authHelper.resolveAuthProviders(existingUser, "PASSKEY");
 
             eventPublisher.publishEvent(
@@ -231,8 +231,6 @@ public class AuthService {
         return options;
     }
 
-    @CachePut(cacheNames = USER, key = "#result.userInfo.id")
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public AuthResponse finishPasskeyAuthentication(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
             PasskeyLoginRequest request) {
@@ -245,10 +243,11 @@ public class AuthService {
             PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
             UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
-            User user = authHelper.fetchUser(userId);
+            User user = authHelper.getUser(userId);
             authHelper.processLockedAccount(user);
             authHelper.validateAccountNotDeleted(user);
             authHelper.resetAccountLock(user);
+            authHelper.cacheUser(user);
 
             requestOptionsRepository.save(servletRequest, servletResponse, null);
             return authHelper.createAuthResponse(user, PASSKEY_LOGIN);
@@ -264,7 +263,12 @@ public class AuthService {
     }
 
     public void deleteSavedPasskey(UUID passkeyId, UUID userId) {
-        passkeyRepo.deleteByIdAndUserId(passkeyId, userId);
+        Passkey passkey = passkeyRepo.findById(passkeyId)
+                .orElseThrow(() -> new NotFoundException("Passkey not found"));
+
+        if (passkey.getUserId().equals(userId)){
+            passkeyRepo.delete(passkey);
+        }
     }
 
     /**
@@ -272,7 +276,7 @@ public class AuthService {
      */
 
     public void resendVerificationEmail(UUID userId) {
-        User user = authHelper.fetchUser(userId);
+        User user = authHelper.getUser(userId);
 
         if (user.isEmailVerified()){
             throw new AlreadyExistException("Email has been verified already");
@@ -282,19 +286,20 @@ public class AuthService {
         emailService.sendVerificationEmail(user, rawToken);
     }
 
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public void verifyEmail(String token) {
         Verification verification = evtService.validateEVT(token);
 
-        User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));
+        User user = authHelper.getUserFromDatabase(UUID.fromString(verification.userId()));
         user.setEmailVerified(true);
+
+        authHelper.updateCache(user);
 
         eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_VERIFIED,
                 "Email verified successfully", getClientInfo(), Map.of()));
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
-        User user = authHelper.fetchUser(userId);
+        User user = authHelper.getUser(userId);
         String newEmail = request.newEmail();
 
         if (user.getPassword() == null) {
@@ -307,15 +312,15 @@ public class AuthService {
         emailService.sendEmailChangeConfirmation(newEmail, rawToken);
     }
 
-    @CacheEvict(cacheNames = ALL_USERS, allEntries = true)
     public void confirmEmailChange(String token) {
         Verification verification = evtService.validateEVT(token);
-        User user = authHelper.fetchUserFresh(UUID.fromString(verification.userId()));
+        User user = authHelper.getUserFromDatabase(UUID.fromString(verification.userId()));
 
         String oldEmail = user.getEmail();
         String newEmail = verification.newEmail();
 
         user.setEmail(newEmail);
+        authHelper.updateCache(user);
 
         eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_CHANGED,
                 "User has changed email", getClientInfo(), Map.of(
@@ -345,7 +350,7 @@ public class AuthService {
     public void resetPassword(ResetPasswordRequest request) {
         String userId = prtService.validatePRT(request.resetToken());
 
-        User user = authHelper.fetchUserFresh(UUID.fromString(userId));
+        User user = authHelper.getUserFromDatabase(UUID.fromString(userId));
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         user.setLocked(false);
         user.setFailedLoginAttempts(0);

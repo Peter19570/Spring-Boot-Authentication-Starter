@@ -19,6 +19,8 @@ import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -37,7 +39,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
-import static com.example.authstarter.features.shared.constants.CacheConstants.ALL_USERS;
+import static com.example.authstarter.features.shared.constants.CacheConstants.USERS;
 import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Component
@@ -48,18 +50,31 @@ public class AuthHelper {
     private final UserMapper userMapper;
     private final AuthMapper authMapper;
     private final JwtService jwtService;
+    private final CacheManager cacheManager;
     private final GoogleIdTokenVerifier verifier;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = ALL_USERS, key = "#userId")
-    public User fetchUser(UUID userId){
+    @Cacheable(cacheNames = USERS, key = "#userId")
+    public User getUser(UUID userId){
         return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public User fetchUserFresh(UUID userId){
+    public void cacheUser(User user) {
+        Cache cache = cacheManager.getCache(USERS);
+        if (cache != null) cache.put(user.getId(), user);
+    }
+
+    public void updateCache(User user){
+        Cache cache = cacheManager.getCache(USERS);
+        if (cache != null){
+            cache.evict(user.getId());
+        }
+    }
+
+    public User getUserFromDatabase(UUID userId){
         return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }

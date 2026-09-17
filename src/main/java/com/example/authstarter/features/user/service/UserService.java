@@ -23,8 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.ACCOUNT_SOFT_DELETED;
-import static com.example.authstarter.features.shared.constants.CacheConstants.ALL_USERS;
-import static com.example.authstarter.features.shared.constants.CacheConstants.USER;
+import static com.example.authstarter.features.shared.constants.CacheConstants.*;
 import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Service
@@ -43,19 +42,19 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserDetailedResponse getCurrentUser(UUID userId){
-        User currentUser = authHelper.fetchUser(userId);
+        User currentUser = authHelper.getUser(userId);
         return userMapper.toDetailedDto(currentUser);
     }
 
     public void initiateDeletion(UUID userId) {
-        User currentUser = authHelper.fetchUser(userId);
+        User currentUser = authHelper.getUser(userId);
         String code = otpService.generateOtp(currentUser.getId().toString());
         emailService.sendAccountDeletionCode(currentUser, code);
     }
 
-    @CacheEvict(cacheNames = {USER, ALL_USERS}, key = "#userId")
+    @CacheEvict(cacheNames = USERS, key = "#userId")
     public void confirmSoftDelete(UUID userId, AccountDeletionRequest request) {
-        User currentUser = authHelper.fetchUserFresh(userId);
+        User currentUser = authHelper.getUserFromDatabase(userId);
 
         if (currentUser.getPassword() != null) {
             if (!passwordEncoder.matches(request.password(), currentUser.getPassword())) {
