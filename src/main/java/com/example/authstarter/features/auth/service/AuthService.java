@@ -148,7 +148,7 @@ public class AuthService {
     public void logout(RefreshTokenRequest request, UUID userId) {
         User user = authHelper.getUser(userId);
 
-        boolean revoked = refreshTokenRepo.findByTokenHash(request.refreshToken())
+        boolean revoked = refreshTokenRepo.findByTokenHash(hashToken(request.refreshToken()))
                 .map(token -> {
                     token.setRevoked(true);
                     refreshTokenRepo.save(token);
