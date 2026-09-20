@@ -1,6 +1,7 @@
 package com.example.authstarter.features.auth.config.security;
 
 import com.example.authstarter.features.auth.config.jwt.JwtFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -32,12 +33,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity httpSecurity,
-            @Qualifier("corsConfigurationSource") CorsConfigurationSource configurationSource) throws Exception{
+            @Qualifier("corsConfigurationSource") CorsConfigurationSource configurationSource) {
         return httpSecurity
                 .cors(cors -> cors.configurationSource(configurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(
+                                (_, response, _)
+                                        -> response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED, UNAUTHORIZED_MSG)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, PATTERN_URLS).permitAll()
                         .requestMatchers(PUBLIC_URLS).permitAll()
@@ -56,7 +62,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws Exception{
+            AuthenticationConfiguration configuration) {
         return configuration.getAuthenticationManager();
     }
 

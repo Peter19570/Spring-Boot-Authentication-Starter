@@ -4,6 +4,8 @@ public final class SecurityConstants {
 
     private SecurityConstants() {}
 
+    public static final String UNAUTHORIZED_MSG = "Unauthorized";
+
     public static final String[] WEBHOOK_URLS = {};
 
     public static final String[] PATTERN_URLS = {"/**"};
