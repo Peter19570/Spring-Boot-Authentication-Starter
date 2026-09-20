@@ -38,4 +38,6 @@ public class RefreshToken {
 
     @CreatedDate
     private Instant createdAt;
+
+    private Instant revokedAt;
 }

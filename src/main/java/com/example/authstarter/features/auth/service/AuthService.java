@@ -17,7 +17,6 @@ import com.example.authstarter.features.auth.exceptions.ValidationException;
 import com.example.authstarter.features.auth.mapper.AuthMapper;
 import com.example.authstarter.features.auth.mapper.PasskeyMapper;
 import com.example.authstarter.features.auth.model.Passkey;
-import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
@@ -30,10 +29,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -55,6 +51,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
+import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_GRACE;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 import static com.example.authstarter.features.shared.constants.CacheConstants.*;
@@ -130,17 +127,27 @@ public class AuthService {
         String token = request.refreshToken();
         JwtClaims jwtClaims = jwtService.extractToken(token);
 
-        if (!jwtClaims.tokenType().equals(REFRESH_VALUE)){
+        if (!jwtClaims.tokenType().equals(REFRESH_VALUE)) {
             throw new AuthenticationException("Invalid token type. Refresh token required.");
         }
 
         User user = authHelper.getUser(jwtClaims.userId());
+        String hash = hashToken(token);
+        Instant now = Instant.now();
 
-        RefreshToken storedToken = refreshTokenRepo.findByTokenHash(hashToken(token))
-                .filter(rt -> !rt.isRevoked() && rt.getExpiresAt().isAfter(Instant.now()))
-                .orElseThrow(() -> new NotFoundException("Refresh token is invalid or expired"));
+        int revoked = refreshTokenRepo.revokeIfActive(hash, now);
 
-        storedToken.setRevoked(true);
+        if (revoked == 0) {
+
+            boolean justRotated = refreshTokenRepo
+                    .existsByTokenHashAndRevokedTrueAndRevokedAtAfterAndExpiresAtAfter(
+                            hash, now.minus(REFRESH_GRACE), now);
+
+            if (!justRotated) {
+                throw new NotFoundException("Refresh token is invalid or expired");
+            }
+        }
+
         return authHelper.createTokenResponse(user);
     }
 

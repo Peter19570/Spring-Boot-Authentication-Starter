@@ -1,5 +1,7 @@
 package com.example.authstarter.features.auth.constants;
 
+import java.time.Duration;
+
 public final class JwtConstants {
 
     private JwtConstants() {}
@@ -18,5 +20,6 @@ public final class JwtConstants {
 
     public static final String OPTIONS_HTTP_METHOD = "OPTIONS";
 
+    public static final Duration REFRESH_GRACE = Duration.ofSeconds(10);
 
 }
