@@ -15,23 +15,26 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.nio.file.AccessDeniedException;
+import java.util.Map;
 
 @RestControllerAdvice(basePackages = "com.example.authstarter.features")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<String>> handleServerException(Exception ex){
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleServerException(Exception ex){
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(
-                        "Internal Server Error (500)",
-                        "Error caught: " + ex.getClass().getSimpleName() + " -- Error Info: " + ex.getMessage()));
+                        HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                        Map.of(
+                                "errorCaught", ex.getClass().getSimpleName(),
+                                "errorInfo", ex.getMessage()
+                        )
+                ));
     }
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<String>> handleAppException(AppException ex){
-        return ResponseEntity
-                .status(ex.getStatus())
+        return ResponseEntity.status(ex.getStatus())
                 .body(ApiResponse.error(ex.getStatus().getReasonPhrase(), ex.getMessage()));
     }
 
@@ -41,9 +44,8 @@ public class GlobalExceptionHandler {
             HandlerMethodValidationException.class
     })
     public ResponseEntity<ApiResponse<String>> handleBadRequest(Exception ex){
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Bad Request (400)", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.name(), ex.getMessage()));
     }
 
     @ExceptionHandler({
@@ -53,16 +55,14 @@ public class GlobalExceptionHandler {
             AuthorizationDeniedException.class
     })
     public ResponseEntity<ApiResponse<String>> handleAuthException(Exception ex){
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Unauthorized (401)", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.name(), ex.getMessage()));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<String>> handleMethodNotAllowed(Exception ex){
-        return ResponseEntity
-                .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ApiResponse.error("Method Not Allowed (405)", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error(HttpStatus.METHOD_NOT_ALLOWED.name(), ex.getMessage()));
     }
 
 }

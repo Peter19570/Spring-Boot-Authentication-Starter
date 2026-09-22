@@ -34,8 +34,7 @@ public class JwtService {
 
     public String generateAccessToken(UserPrincipal principal) {
         Map<String, Object> claims = new HashMap<>();
-        List<String> roles = principal.getAuthorities()
-                .stream()
+        List<String> roles = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 

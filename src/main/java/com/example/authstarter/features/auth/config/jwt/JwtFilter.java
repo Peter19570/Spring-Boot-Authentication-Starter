@@ -2,7 +2,7 @@ package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.auth.dto.internal.JwtClaims;
 import com.example.authstarter.features.auth.exceptions.AuthenticationException;
-import com.example.authstarter.features.auth.exceptions.ValidationException;
+import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
@@ -25,7 +25,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.example.authstarter.features.auth.constants.JwtConstants.*;
@@ -77,7 +76,7 @@ public class JwtFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (JwtException | UsernameNotFoundException | AuthenticationException e) {
-            handleException(response, "Unauthorized: " + e.getMessage());
+            handleException(response, e.getMessage());
         }
     }
 
@@ -104,6 +103,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private void handleException(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(Map.of("Error", message)));
+        response.getWriter().write(objectMapper.writeValueAsString(
+                ApiResponse.error(HttpStatus.UNAUTHORIZED.name(), message)));
     }
 }
