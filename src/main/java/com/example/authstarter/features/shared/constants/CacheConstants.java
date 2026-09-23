@@ -6,7 +6,7 @@ public final class CacheConstants {
 
     public static final String USERS = "users";
 
-    public static final String PAGE_CACHE_KEY = "#pagaable.pageNumber '-' #pagable.pageSize";
+    public static final String PAGE_CACHE_KEY = "#pagable.pageNumber '-' #pagable.pageSize";
 
     public static final String[] CACHE_NAMES = {USERS};
 }

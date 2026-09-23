@@ -1,12 +1,11 @@
 package com.example.authstarter.features.auth.service.memory;
 
-import com.example.authstarter.features.auth.exceptions.NotFoundException;
+import com.example.authstarter.features.shared.exceptions.custom.NotFoundException;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
-import java.util.concurrent.*;
 
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
 

@@ -1,7 +1,7 @@
 package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.auth.dto.internal.JwtClaims;
-import com.example.authstarter.features.auth.exceptions.AuthenticationException;
+import com.example.authstarter.features.shared.exceptions.custom.AuthenticationException;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;

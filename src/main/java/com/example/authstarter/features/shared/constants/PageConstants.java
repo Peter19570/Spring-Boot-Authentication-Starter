@@ -4,5 +4,5 @@ public final class PageConstants {
 
     private PageConstants() {}
 
-    public static final int MAX_PAGE_SIZE = 50;
+    public static final String DEFAULT_SORT_FIELD = "createdAt";
 }

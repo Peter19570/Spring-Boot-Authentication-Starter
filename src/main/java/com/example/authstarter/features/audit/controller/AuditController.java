@@ -6,18 +6,16 @@ import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.example.authstarter.features.shared.constants.PageConstants.MAX_PAGE_SIZE;
+import static com.example.authstarter.features.shared.constants.PageConstants.DEFAULT_SORT_FIELD;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,9 +28,12 @@ public class AuditController {
     @GetMapping
     @Operation(summary = "Retrieve audit records.")
     public ResponseEntity<ApiResponse<PageResponse<AuditResponse>>> getAllAudits(
-            @RequestParam(defaultValue = "0") @PositiveOrZero int page
+            @PageableDefault(
+                    page = 1, sort = DEFAULT_SORT_FIELD,
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
     ) {
-        Pageable pageable = PageRequest.of(page, MAX_PAGE_SIZE, Sort.by("createdAt").descending());
         PageResponse<AuditResponse> responses = auditService.getAllAudits(pageable);
         return ResponseEntity.ok(ApiResponse.success("All Audit Logs", responses));
     }

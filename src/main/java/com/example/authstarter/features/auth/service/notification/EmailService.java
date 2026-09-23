@@ -1,6 +1,6 @@
 package com.example.authstarter.features.auth.service.notification;
 
-import com.example.authstarter.features.auth.exceptions.MessageException;
+import com.example.authstarter.features.shared.exceptions.custom.MessageException;
 import com.example.authstarter.features.user.model.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
