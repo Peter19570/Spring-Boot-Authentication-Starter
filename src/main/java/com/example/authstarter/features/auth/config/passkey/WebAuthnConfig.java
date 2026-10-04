@@ -22,10 +22,10 @@ public class WebAuthnConfig {
     @Value("${spring.application.name}")
     private String appName;
 
-    @Value("${app.frontend.domain.id}")
-    private String domainId;
+    @Value("${app.webauthn.rp-id}")
+    private String rpId;
 
-    @Value("${app.frontend.url}")
+    @Value("${app.webauthn.allowed-origins}")
     private Set<String> allowedOrigins;
 
     @Bean
@@ -36,10 +36,7 @@ public class WebAuthnConfig {
         return new Webauthn4JRelyingPartyOperations(
                 userEntities,
                 userCredentials,
-                PublicKeyCredentialRpEntity.builder()
-                        .id(domainId)
-                        .name(appName)
-                        .build(),
+                PublicKeyCredentialRpEntity.builder().id(rpId).name(appName).build(),
                 allowedOrigins
         );
     }
