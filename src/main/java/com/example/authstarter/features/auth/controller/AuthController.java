@@ -68,7 +68,6 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Log out authenticated user.")
     public ResponseEntity<Void> logout(
             @Valid @RequestBody RefreshTokenRequest request,
@@ -103,8 +102,7 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/resend-verification-email")
-    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/resend-verification-email")
     @Operation(summary = "Resend email verification token.")
     public ResponseEntity<Void> resendVerificationEmail(
             @AuthenticationPrincipal UserPrincipal principal
@@ -114,7 +112,6 @@ public class AuthController {
     }
 
     @PostMapping("/change-email")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Request verification token to change email")
     public ResponseEntity<Void> requestChange(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -141,7 +138,6 @@ public class AuthController {
      */
 
     @PostMapping("/passkeys/initialize")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Initialize passkey registration.")
     public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> startPasskeyRegistration(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse
@@ -152,7 +148,6 @@ public class AuthController {
     }
 
     @PostMapping("/passkeys/register")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Complete passkey registration.")
     public ResponseEntity<ApiResponse<CredentialRecord>> finishPasskeyRegistration(
             HttpServletRequest servletRequest, HttpServletResponse servletResponse,
@@ -186,17 +181,15 @@ public class AuthController {
     }
 
     @GetMapping("/passkeys")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Shows list of passkeys user has created")
     public ResponseEntity<ApiResponse<List<PasskeyResponse>>> getAllPasskeys(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-      List<PasskeyResponse> responses = authService.findAllUserPasskeys(principal.id());
-      return ResponseEntity.ok(ApiResponse.success("User Passkey List", responses));
+        List<PasskeyResponse> responses = authService.findAllUserPasskeys(principal.id());
+        return ResponseEntity.ok(ApiResponse.success("User Passkey List", responses));
     }
 
     @DeleteMapping("/passkeys/{passkeyId}")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Remove a registered passkey.")
     public ResponseEntity<Void> deleteSavedPasskey(
             @AuthenticationPrincipal UserPrincipal principal,
