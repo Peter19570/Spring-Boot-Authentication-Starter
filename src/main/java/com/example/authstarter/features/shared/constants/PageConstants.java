@@ -4,5 +4,5 @@ public final class PageConstants {
 
     private PageConstants() {}
 
-    public static final String DEFAULT_SORT_FIELD = "createdAt";
+    public static final String SORT = "createdAt";
 }
