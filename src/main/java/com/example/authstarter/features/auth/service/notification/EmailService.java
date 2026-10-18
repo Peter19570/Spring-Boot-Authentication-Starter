@@ -6,7 +6,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailSendException;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -43,11 +43,29 @@ public class EmailService {
         context.setVariable("greetingName", getGreetingName(user));
         context.setVariable("link", link);
         context.setVariable("currentYear", Year.now().getValue());
+        context.setVariable("appName", appName);
 
         String htmlContent = templateEngine.process("verification-email", context);
 
         if (user != null) {
             sendHtmlEmail(user.getEmail(), "Verify your email address", htmlContent);
+        }
+    }
+
+    @Async(EMAIL_EXECUTOR)
+    public void resendVerificationEmail(User user, String token) {
+        String link = frontendUrl + "/verify-email?token=" + token;
+
+        Context context = new Context();
+        context.setVariable("greetingName", getGreetingName(user));
+        context.setVariable("link", link);
+        context.setVariable("currentYear", Year.now().getValue());
+        context.setVariable("appName", appName);
+
+        String htmlContent = templateEngine.process("verification-resend-email", context);
+
+        if (user != null) {
+            sendHtmlEmail(user.getEmail(), "Your new verification link", htmlContent);
         }
     }
 
@@ -59,6 +77,7 @@ public class EmailService {
         context.setVariable("greetingName", getGreetingName(user));
         context.setVariable("link", link);
         context.setVariable("currentYear", Year.now().getValue());
+        context.setVariable("appName", appName);
 
         String htmlContent = templateEngine.process("password-reset-email", context);
 
@@ -76,6 +95,7 @@ public class EmailService {
         context.setVariable("greetingName", getGreetingName(user));
         context.setVariable("provider", formattedProvider);
         context.setVariable("currentYear", Year.now().getValue());
+        context.setVariable("appName", appName);
 
         String htmlContent = templateEngine.process("social-login-reminder-email", context);
 
@@ -92,10 +112,11 @@ public class EmailService {
         context.setVariable("greetingName", getGreetingName(user));
         context.setVariable("code", code);
         context.setVariable("currentYear", Year.now().getValue());
+        context.setVariable("appName", appName);
 
         String htmlContent = templateEngine.process("account-deletion-email", context);
 
-        String subject = "URGENT: Account Deletion Security Code";
+        String subject = "Your account deletion code";
         sendHtmlEmail(user.getEmail(), subject, htmlContent);
     }
 
@@ -107,6 +128,7 @@ public class EmailService {
         context.setVariable("newEmail", newEmail);
         context.setVariable("confirmationUrl", confirmationUrl);
         context.setVariable("currentYear", Year.now().getValue());
+        context.setVariable("appName", appName);
 
         String htmlContent = templateEngine.process("email-change-confirmation", context);
 
@@ -115,14 +137,18 @@ public class EmailService {
     }
 
     private String getGreetingName(User user) {
-        if (user == null || user.getFirstName().equals("not-set") || user.getFirstName().trim().isEmpty()) {
+        if (user == null || isUnset(user.getFirstName())) {
             return "there";
         }
         String name = user.getFirstName().trim();
-        if (!user.getLastName().equals("not-set")) {
+        if (!isUnset(user.getLastName())) {
             name += " " + user.getLastName().trim();
         }
         return name;
+    }
+
+    private boolean isUnset(String value) {
+        return value == null || value.isBlank() || value.equals("not-set");
     }
 
     private void sendHtmlEmail(String to, String subject, String body) {
@@ -135,8 +161,8 @@ public class EmailService {
             helper.setText(body, true);
             mailSender.send(message);
 
-        } catch (MessagingException | MailSendException | UnsupportedEncodingException e ) {
-            throw new MessageException("Failed to send email");
+        } catch (MessagingException | MailException | UnsupportedEncodingException e) {
+            throw new MessageException("Failed to send email", e);
         }
     }
 }

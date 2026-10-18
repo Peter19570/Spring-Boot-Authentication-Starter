@@ -290,7 +290,7 @@ public class AuthService {
         }
 
         String rawToken = evtService.generateEVT(user.getId().toString(), null);
-        emailService.sendVerificationEmail(user, rawToken);
+        emailService.resendVerificationEmail(user, rawToken);
     }
 
     public void verifyEmail(String token) {

@@ -1,47 +1,55 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .header { background-color: #001A33; padding: 30px; text-align: center; }
-        .header h1 { color: #FFD700; margin: 0; font-size: 24px; letter-spacing: 1px; }
-        .content { padding: 40px; color: #333333; line-height: 1.6; }
-        .info-box { background-color: #f9f9f9; border-left: 4px solid #001A33; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
-        .footer { background-color: #eeeeee; padding: 20px; text-align: center; font-size: 12px; color: #777777; }
-        .warning { font-size: 11px; color: #999999; margin-top: 20px; border-top: 1px solid #eeeeee; padding-top: 10px; }
-    </style>
-    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>No password to reset</title>
 </head>
-<body>
-<div class="container">
-    <div class="header">
-        <h1>Auth Starter</h1>
-    </div>
-    <div class="content">
-        <p>Hello <span th:text="${greetingName}">User</span>,</p>
-        <p>We received a request to reset the password for the account associated with this email address.</p>
+<body style="margin:0;padding:0;background-color:#000d1a;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your account uses social login, so there is no password to reset.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000d1a" style="background-color:#000d1a;">
+    <tr>
+        <td align="center" style="padding:32px 16px;font-family:'Inter','Segoe UI',Helvetica,Arial,sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+                <tr>
+                    <td style="padding:0 4px 20px 4px;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:#ffffff;">
+                        &nbsp;<span th:text="$${appName}">$1</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td bgcolor="#001A33" style="background-color:#001A33;border:1px solid #0f3a5f;border-radius:16px;padding:32px;color:#b4c2d3;font-size:15px;line-height:1.6;">
+                        <h1 style="margin:0 0 16px 0;font-size:22px;line-height:1.3;font-weight:700;letter-spacing:-0.02em;color:#ffffff;">No password to reset</h1>
+                        <p style="margin:0 0 12px 0;">Hi <span th:text="${greetingName}" style="color:#ffffff;">there</span>,</p>
+                        <p style="margin:0 0 20px 0;">We received a request to reset the password for the account with this email address.</p>
 
-        <div class="info-box">
-            <p style="margin: 0;">Our records show that you typically log in using your <strong th:text="${provider}">Social</strong> account. Because of this, you do not have a separate password set up on our platform.</p>
-        </div>
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                                <td bgcolor="#022440" style="background-color:#022440;border-left:3px solid #FFD700;border-radius:0 8px 8px 0;padding:14px 16px;font-size:14px;line-height:1.6;color:#b4c2d3;">
+                                    You usually log in with your <strong th:text="${provider}" style="color:#ffffff;">Social</strong> account, so this account doesn't have a separate password.
+                                </td>
+                            </tr>
+                        </table>
 
-        <p><strong>How to log in:</strong><br>
-            Simply go to the login page and click the <strong>"Continue with <span th:text="${provider}">Social</span>"</strong> button.</p>
+                        <p style="margin:20px 0 6px 0;font-weight:600;color:#ffffff;">How to log in</p>
+                        <p style="margin:0;">Go to the login page and tap <strong style="color:#ffffff;">Continue with <span th:text="${provider}">Social</span></strong>.</p>
 
-        <p>If you would like to create a unique password for this account, please log in via <span th:text="${provider}">Social</span> first, then visit your Account Settings to set a new password.</p>
+                        <p style="margin:20px 0 0 0;">Want a password of your own? Log in with <span th:text="${provider}">Social</span> first, then set one in your account settings.</p>
 
-        <p>If you did not request this, you can safely ignore this email.</p>
+                        <hr style="border:0;border-top:1px solid #0f3a5f;margin:24px 0 20px 0;">
 
-        <p>Best regards,<br><strong>System Administrator</strong></p>
-
-        <div class="warning">
-            This is an automated security message. If you didn't initiate this request, no action is needed.
-        </div>
-    </div>
-    <div class="footer">
-        &copy; <span th:text="${currentYear}">2026</span> Auth Starter | Security Services
-    </div>
-</div>
+                        <p style="margin:0;font-size:13px;color:#7f93a8;">If you didn't ask for this, you can safely ignore this email. No action is needed.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding:20px 8px 0 8px;font-size:12px;line-height:1.5;color:#7f93a8;">
+                        &copy; <span th:text="${currentYear}">2026</span> <span> <span th:text="$${appName}">$1</span> &middot; This is an automated message
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 </body>
 </html>
