@@ -1,56 +1,180 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="dark">
-    <meta name="supported-color-schemes" content="dark">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="supported-color-schemes" content="dark" />
     <title>Confirm account deletion</title>
-</head>
-<body style="margin:0;padding:0;background-color:#000d1a;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your account deletion code. It expires in 10 minutes.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000d1a" style="background-color:#000d1a;">
-    <tr>
-        <td align="center" style="padding:32px 16px;font-family:'Inter','Segoe UI',Helvetica,Arial,sans-serif;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
-                <tr>
-                    <td style="padding:0 4px 20px 4px;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:#ffffff;">
-                        &nbsp;<span th:text="$${appName}">$1</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td bgcolor="#001A33" style="background-color:#001A33;border:1px solid #0f3a5f;border-radius:16px;padding:32px;color:#b4c2d3;font-size:15px;line-height:1.6;">
-                        <h1 style="margin:0 0 16px 0;font-size:22px;line-height:1.3;font-weight:700;letter-spacing:-0.02em;color:#ffffff;">Confirm account deletion</h1>
-                        <p style="margin:0 0 12px 0;">Hi <span th:text="${greetingName}" style="color:#ffffff;">there</span>,</p>
-                        <p style="margin:0;">We received a request to permanently delete your account. Enter this code in the app to confirm:</p>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #000d1a">
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0">
+      Your account deletion code. It expires in 10 minutes.
+    </div>
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      bgcolor="#000d1a"
+      style="background-color: #000d1a"
+    >
+      <tr>
+        <td
+          align="center"
+          style="
+            padding: 32px 16px;
+            font-family:
+              &quot;Inter&quot;, &quot;Segoe UI&quot;, Helvetica, Arial,
+              sans-serif;
+          "
+        >
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 520px"
+          >
+            <tr>
+              <td
+                style="
+                  padding: 0 4px 20px 4px;
+                  font-size: 18px;
+                  font-weight: 700;
+                  letter-spacing: -0.01em;
+                  color: #ffffff;
+                "
+              >
+                &nbsp;<span th:text="${appName}">$1</span>
+              </td>
+            </tr>
+            <tr>
+              <td
+                bgcolor="#001A33"
+                style="
+                  background-color: #001a33;
+                  border: 1px solid #0f3a5f;
+                  border-radius: 16px;
+                  padding: 32px;
+                  color: #b4c2d3;
+                  font-size: 15px;
+                  line-height: 1.6;
+                "
+              >
+                <h1
+                  style="
+                    margin: 0 0 16px 0;
+                    font-size: 22px;
+                    line-height: 1.3;
+                    font-weight: 700;
+                    letter-spacing: -0.02em;
+                    color: #ffffff;
+                  "
+                >
+                  Confirm account deletion
+                </h1>
+                <p style="margin: 0 0 12px 0">
+                  Hi
+                  <span th:text="${greetingName}" style="color: #ffffff"
+                    >there</span
+                  >,
+                </p>
+                <p style="margin: 0">
+                  We received a request to permanently delete your account.
+                  Enter this code in the app to confirm:
+                </p>
 
-                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 12px 0;">
-                            <tr>
-                                <td align="center" bgcolor="#022440" style="background-color:#022440;border:1px solid #0f3a5f;border-radius:14px;padding:20px;">
-                                    <span th:text="${code}" style="font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:8px;color:#FFD700;">000000</span>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <p style="margin:0 0 24px 0;font-size:13px;color:#7f93a8;">This code expires in <strong style="color:#b4c2d3;">10 minutes</strong>.</p>
-
-                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                            <tr>
-                                <td bgcolor="#2b1519" style="background-color:#2b1519;border-left:3px solid #ff5a5a;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;line-height:1.6;color:#ff9b9b;">
-                                    <strong>Warning:</strong> deleting your account disables your access and starts the permanent removal of your data. If this wasn't you, change your password right away and ignore this email.
-                                </td>
-                            </tr>
-                        </table>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin: 24px 0 12px 0"
+                >
+                  <tr>
+                    <td
+                      align="center"
+                      bgcolor="#022440"
+                      style="
+                        background-color: #022440;
+                        border: 1px solid #0f3a5f;
+                        border-radius: 14px;
+                        padding: 20px;
+                      "
+                    >
+                      <span
+                        th:text="${code}"
+                        style="
+                          font-family:
+                            &quot;JetBrains Mono&quot;, Consolas,
+                            &quot;Courier New&quot;, monospace;
+                          font-size: 34px;
+                          font-weight: 700;
+                          letter-spacing: 8px;
+                          color: #ffd700;
+                        "
+                        >000000</span
+                      >
                     </td>
-                </tr>
-                <tr>
-                    <td align="center" style="padding:20px 8px 0 8px;font-size:12px;line-height:1.5;color:#7f93a8;">
-                        &copy; <span th:text="${currentYear}">2026</span> <span th:text="$${appName}">$1</span> &middot; This is an automated message
+                  </tr>
+                </table>
+
+                <p style="margin: 0 0 24px 0; font-size: 13px; color: #7f93a8">
+                  This code expires in
+                  <strong style="color: #b4c2d3">10 minutes</strong>.
+                </p>
+
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                >
+                  <tr>
+                    <td
+                      bgcolor="#2b1519"
+                      style="
+                        background-color: #2b1519;
+                        border-left: 3px solid #ff5a5a;
+                        border-radius: 0 8px 8px 0;
+                        padding: 14px 16px;
+                        font-size: 13px;
+                        line-height: 1.6;
+                        color: #ff9b9b;
+                      "
+                    >
+                      <strong>Warning:</strong> deleting your account disables
+                      your access and starts the permanent removal of your data.
+                      If this wasn't you, change your password right away and
+                      ignore this email.
                     </td>
-                </tr>
-            </table>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td
+                align="center"
+                style="
+                  padding: 20px 8px 0 8px;
+                  font-size: 12px;
+                  line-height: 1.5;
+                  color: #7f93a8;
+                "
+              >
+                &copy; <span th:text="${currentYear}">2026</span>
+                <span th:text="${appName}">$1</span> &middot; This is an
+                automated message
+              </td>
+            </tr>
+          </table>
         </td>
-    </tr>
-</table>
-</body>
+      </tr>
+    </table>
+  </body>
 </html>

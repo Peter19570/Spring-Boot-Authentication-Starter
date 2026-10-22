@@ -90,7 +90,7 @@ public class AuthService {
         NameParts names = authHelper.extractUsernameFromEmail(email);
         authHelper.validateEmailNotRegistered(email);
 
-        User user = authMapper.toEntityFromAuthRequest(request, names.firstName(), names.lastName());
+        User user = authMapper.toEntityFromAuthRequest(request, names);
         user.setPassword(passwordEncoder.encode(request.password()));
         User savedUser = userRepo.save(user);
 

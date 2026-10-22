@@ -1,5 +1,6 @@
 package com.example.authstarter.features.auth.mapper;
 
+import com.example.authstarter.features.auth.dto.internal.NameParts;
 import com.example.authstarter.features.auth.dto.request.AuthRequest;
 import com.example.authstarter.features.user.model.User;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -12,9 +13,9 @@ public interface AuthMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "provider", constant = "LOCAL")
-    @Mapping(target = "firstName", source = "firstName")
-    @Mapping(target = "lastName", source = "lastName")
-    User toEntityFromAuthRequest(AuthRequest request, String firstName, String lastName);
+    @Mapping(target = "firstName", source = "names.firstName")
+    @Mapping(target = "lastName", source = "names.lastName")
+    User toEntityFromAuthRequest(AuthRequest request, NameParts names);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", expression = "java(payload.getEmail())")
