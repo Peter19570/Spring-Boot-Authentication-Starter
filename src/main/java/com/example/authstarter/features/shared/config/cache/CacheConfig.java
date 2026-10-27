@@ -36,7 +36,7 @@ public class CacheConfig {
     @Bean
     public Cache<String, Verification> evtStore(){
         return Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofMinutes(20))
+                .expireAfterWrite(Duration.ofHours(24))
                 .maximumSize(10_000)
                 .build();
     }
@@ -45,7 +45,7 @@ public class CacheConfig {
     public Cache<String, String> prtStore(){
         return Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(10))
-                .maximumSize(10_100)
+                .maximumSize(10_000)
                 .build();
     }
 

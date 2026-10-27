@@ -48,10 +48,7 @@ public class AuditService {
     }
 
     private String getUserFullName(User user){
-        if (user.getFirstName().equals("not-set") && user.getLastName().equals("not-set")){
-            return "Unknown";
-        }
-
-        return user.getFirstName() + " " + user.getLastName();
+        String name = user.displayName();
+        return name != null ? name : "Unknown";
     }
 }

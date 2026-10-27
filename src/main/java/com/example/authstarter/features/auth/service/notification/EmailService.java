@@ -16,6 +16,10 @@ import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Year;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.example.authstarter.features.auth.constants.AsyncConstants.EMAIL_EXECUTOR;
 
@@ -29,136 +33,86 @@ public class EmailService {
     @Value("${app.mail.frontend-url}")
     private String frontendUrl;
 
-    @Value("${spring.mail.username}")
-    private String username;
+    // Optional: set app.mail.from when your SMTP username isn't a real sender address (e.g. SendGrid's "apikey")
+    @Value("${app.mail.from:${spring.mail.username}}")
+    private String from;
 
     @Value("${spring.application.name}")
     private String appName;
 
     @Async(EMAIL_EXECUTOR)
     public void sendVerificationEmail(User user, String token) {
-        String link = frontendUrl + "/verify-email?token=" + token;
-
-        Context context = new Context();
-        context.setVariable("greetingName", getGreetingName(user));
-        context.setVariable("link", link);
-        context.setVariable("currentYear", Year.now().getValue());
-        context.setVariable("appName", appName);
-
-        String htmlContent = templateEngine.process("verification-email", context);
-
-        if (user != null) {
-            sendHtmlEmail(user.getEmail(), "Verify your email address", htmlContent);
-        }
+        send(user.getEmail(), "Verify your email address", "verification-email", Map.of(
+                "greetingName", greetingName(user),
+                "link", frontendUrl + "/verify-email?token=" + token));
     }
 
     @Async(EMAIL_EXECUTOR)
     public void resendVerificationEmail(User user, String token) {
-        String link = frontendUrl + "/verify-email?token=" + token;
-
-        Context context = new Context();
-        context.setVariable("greetingName", getGreetingName(user));
-        context.setVariable("link", link);
-        context.setVariable("currentYear", Year.now().getValue());
-        context.setVariable("appName", appName);
-
-        String htmlContent = templateEngine.process("verification-resend-email", context);
-
-        if (user != null) {
-            sendHtmlEmail(user.getEmail(), "Your new verification link", htmlContent);
-        }
+        send(user.getEmail(), "Your new verification link", "verification-resend-email", Map.of(
+                "greetingName", greetingName(user),
+                "link", frontendUrl + "/verify-email?token=" + token));
     }
 
     @Async(EMAIL_EXECUTOR)
     public void sendPasswordResetEmail(User user, String token) {
-        String link = frontendUrl + "/reset-password?token=" + token;
-
-        Context context = new Context();
-        context.setVariable("greetingName", getGreetingName(user));
-        context.setVariable("link", link);
-        context.setVariable("currentYear", Year.now().getValue());
-        context.setVariable("appName", appName);
-
-        String htmlContent = templateEngine.process("password-reset-email", context);
-
-        if (user != null) {
-            sendHtmlEmail(user.getEmail(), "Reset your password", htmlContent);
-        }
+        send(user.getEmail(), "Reset your password", "password-reset-email", Map.of(
+                "greetingName", greetingName(user),
+                "link", frontendUrl + "/reset-password?token=" + token));
     }
 
     @Async(EMAIL_EXECUTOR)
     public void sendSocialLoginReminder(User user, String provider) {
-        String formattedProvider = provider.substring(0, 1).toUpperCase() +
-                provider.substring(1).toLowerCase();
-
-        Context context = new Context();
-        context.setVariable("greetingName", getGreetingName(user));
-        context.setVariable("provider", formattedProvider);
-        context.setVariable("currentYear", Year.now().getValue());
-        context.setVariable("appName", appName);
-
-        String htmlContent = templateEngine.process("social-login-reminder-email", context);
-
-        String subject = "Information regarding your password reset request";
-
-        if (user != null) {
-            sendHtmlEmail(user.getEmail(), subject, htmlContent);
-        }
+        send(user.getEmail(), "Information regarding your password reset request",
+                "social-login-reminder-email", Map.of(
+                        "greetingName", greetingName(user),
+                        "provider", formatProvider(provider)));
     }
 
     @Async(EMAIL_EXECUTOR)
     public void sendAccountDeletionCode(User user, String code) {
-        Context context = new Context();
-        context.setVariable("greetingName", getGreetingName(user));
-        context.setVariable("code", code);
-        context.setVariable("currentYear", Year.now().getValue());
-        context.setVariable("appName", appName);
-
-        String htmlContent = templateEngine.process("account-deletion-email", context);
-
-        String subject = "Your account deletion code";
-        sendHtmlEmail(user.getEmail(), subject, htmlContent);
+        send(user.getEmail(), "Your account deletion code", "account-deletion-email", Map.of(
+                "greetingName", greetingName(user),
+                "code", code));
     }
 
     @Async(EMAIL_EXECUTOR)
     public void sendEmailChangeConfirmation(String newEmail, String token) {
-        String confirmationUrl = frontendUrl + "/confirm-email?token=" + token;
+        send(newEmail, "Confirm your new email address", "email-change-confirmation", Map.of(
+                "newEmail", newEmail,
+                "confirmationUrl", frontendUrl + "/confirm-email?token=" + token));
+    }
 
+    private String greetingName(User user) {
+        return Objects.requireNonNullElse(user.displayName(), "there");
+    }
+
+    private String formatProvider(String provider) {
+        if (provider == null || provider.isBlank()) {
+            return "a social account";
+        }
+        return Arrays.stream(provider.split(","))
+                .map(String::trim)
+                .filter(p -> !p.isEmpty())
+                .map(p -> p.substring(0, 1).toUpperCase() + p.substring(1).toLowerCase())
+                .collect(Collectors.joining(" / "));
+    }
+
+    private void send(String to, String subject, String template, Map<String, ?> variables) {
         Context context = new Context();
-        context.setVariable("newEmail", newEmail);
-        context.setVariable("confirmationUrl", confirmationUrl);
+        variables.forEach(context::setVariable);
         context.setVariable("currentYear", Year.now().getValue());
         context.setVariable("appName", appName);
 
-        String htmlContent = templateEngine.process("email-change-confirmation", context);
+        String htmlContent = templateEngine.process(template, context);
 
-        String subject = "Confirm your new email address";
-        sendHtmlEmail(newEmail, subject, htmlContent);
-    }
-
-    private String getGreetingName(User user) {
-        if (user == null || isUnset(user.getFirstName())) {
-            return "there";
-        }
-        String name = user.getFirstName().trim();
-        if (!isUnset(user.getLastName())) {
-            name += " " + user.getLastName().trim();
-        }
-        return name;
-    }
-
-    private boolean isUnset(String value) {
-        return value == null || value.isBlank() || value.equals("not-set");
-    }
-
-    private void sendHtmlEmail(String to, String subject, String body) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(username, appName);
+            helper.setFrom(from, appName);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(body, true);
+            helper.setText(htmlContent, true);
             mailSender.send(message);
 
         } catch (MessagingException | MailException | UnsupportedEncodingException e) {

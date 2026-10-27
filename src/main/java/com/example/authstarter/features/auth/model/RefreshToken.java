@@ -15,7 +15,10 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "refresh_tokens")
+@Table(name = "refresh_tokens", indexes = {
+        @Index(name = "idx_refresh_tokens_user_id", columnList = "user_id"),
+        @Index(name = "idx_refresh_tokens_expires_at", columnList = "expires_at")
+})
 @EntityListeners(AuditingEntityListener.class)
 public class RefreshToken {
 

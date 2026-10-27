@@ -18,6 +18,7 @@ public interface PasskeyMapper {
 
     List<PasskeyResponse> toDto(List<Passkey> passkey);
 
+    // signatureCount, label, lastUsed, uvInitialized, backupEligible and backupState map automatically by name
     @Mapping(
             target = "credentialId",
             expression = "java(credentialRecord.getCredentialId().toBase64UrlString())"
@@ -25,10 +26,6 @@ public interface PasskeyMapper {
     @Mapping(
             target = "publicKey",
             expression = "java(java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(credentialRecord.getPublicKey().getBytes()))"
-    )
-    @Mapping(
-            target = "signatureCount",
-            expression = "java(credentialRecord.getSignatureCount())"
     )
     @Mapping(
             target = "userId",
@@ -44,30 +41,7 @@ public interface PasskeyMapper {
     )
     Passkey toEntity(CredentialRecord credentialRecord);
 
-    @Mapping(
-            target = "credentialId",
-            expression = "java(credentialRecord.getCredentialId().toBase64UrlString())"
-    )
-    @Mapping(
-            target = "publicKey",
-            expression = "java(java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(credentialRecord.getPublicKey().getBytes()))"
-    )
-    @Mapping(
-            target = "signatureCount",
-            expression = "java(credentialRecord.getSignatureCount())"
-    )
-    @Mapping(
-            target = "userId",
-            expression = "java(UUID.fromString(new String(credentialRecord.getUserEntityUserId().getBytes(), StandardCharsets.UTF_8)))"
-    )
-    @Mapping(
-            target = "attestationObject",
-            expression = "java(credentialRecord.getAttestationObject() != null ? credentialRecord.getAttestationObject().toBase64UrlString() : null)"
-    )
-    @Mapping(
-            target = "attestationClientDataJSON",
-            expression = "java(credentialRecord.getAttestationClientDataJSON() != null ? credentialRecord.getAttestationClientDataJSON().toBase64UrlString() : null)"
-    )
+    @InheritConfiguration(name = "toEntity")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntity(CredentialRecord credentialRecord, @MappingTarget Passkey passkey);
 

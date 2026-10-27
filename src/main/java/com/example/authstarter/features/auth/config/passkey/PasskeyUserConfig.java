@@ -22,14 +22,14 @@ public class PasskeyUserConfig implements PublicKeyCredentialUserEntityRepositor
     @Override
     public @Nullable PublicKeyCredentialUserEntity findById(Bytes id) {
         UUID userId = UUID.fromString(new String(id.getBytes(), StandardCharsets.UTF_8));
-        return userRepo.findById(userId)
+        return userRepo.findByIdAndDeletedAtIsNull(userId)
                 .map(this::toUserEntity)
                 .orElse(null);
     }
 
     @Override
     public @Nullable PublicKeyCredentialUserEntity findByUsername(String email) {
-        return userRepo.findByEmail(email)
+        return userRepo.findByEmailAndDeletedAtIsNull(email)
                 .map(this::toUserEntity)
                 .orElse(null);
     }
@@ -47,7 +47,7 @@ public class PasskeyUserConfig implements PublicKeyCredentialUserEntityRepositor
         return ImmutablePublicKeyCredentialUserEntity.builder()
                 .id(userIdBytes)
                 .name(user.getEmail())
-                .displayName(user.getFirstName() + " " + user.getLastName())
+                .displayName(user.displayName() != null ? user.displayName() : user.getEmail())
                 .build();
     }
 }

@@ -17,6 +17,7 @@ import com.example.authstarter.features.shared.exceptions.custom.ValidationExcep
 import com.example.authstarter.features.auth.mapper.AuthMapper;
 import com.example.authstarter.features.auth.mapper.PasskeyMapper;
 import com.example.authstarter.features.auth.model.Passkey;
+import com.example.authstarter.features.auth.model.RefreshToken;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
@@ -113,6 +114,7 @@ public class AuthService {
         return authHelper.createAuthResponse(user, LOCAL_LOGIN);
     }
 
+    @Transactional(noRollbackFor = AuthenticationException.class) // the theft response below must be committed
     public TokenResponse refresh(RefreshTokenRequest request) {
         String token = request.refreshToken();
         JwtClaims jwtClaims = jwtService.extractToken(token);
@@ -134,6 +136,11 @@ public class AuthService {
                             hash, now.minus(REFRESH_GRACE), now);
 
             if (!justRotated) {
+                // An already-rotated token replayed after the grace window: assume it was stolen, end every session
+                refreshTokenRepo.findByTokenHash(hash)
+                        .filter(RefreshToken::isRevoked)
+                        .ifPresent(t -> refreshTokenRepo.deleteAllByUserId(user.getId()));
+
                 throw new AuthenticationException("Refresh token is invalid or expired");
             }
         }
@@ -142,11 +149,10 @@ public class AuthService {
     }
 
     public void logout(RefreshTokenRequest request) {
-        // revokedAt is deliberately NOT set: it would make this token eligible for the refresh grace window.
+        // Delete rather than mark revoked: a replayed logged-out token is then simply "not found"
         refreshTokenRepo.findByTokenHash(hashToken(request.refreshToken())).ifPresent(token -> {
-            token.setRevoked(true);
-
             User user = authHelper.getUserFromDatabase(token.getUser().getId());
+            refreshTokenRepo.delete(token);
             authHelper.updateCache(user);
 
             eventPublisher.publishEvent(AuditRequest.log(
