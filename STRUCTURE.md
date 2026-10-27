@@ -69,12 +69,6 @@ example/
     │   │   │       ├── PasskeyOptionsResponse.java
     │   │   │       ├── PasskeyResponse.java
     │   │   │       └── TokenResponse.java
-    │   │   ├── exceptions
-    │   │   │   ├── AlreadyExistException.java
-    │   │   │   ├── AuthenticationException.java
-    │   │   │   ├── MessageException.java
-    │   │   │   ├── NotFoundException.java
-    │   │   │   └── ValidationException.java
     │   │   ├── mapper
     │   │   │   ├── AuthMapper.java
     │   │   │   └── PasskeyMapper.java
@@ -112,6 +106,12 @@ example/
     │   │   │   ├── PageResponse.java
     │   │   │   └── UserPrincipal.java
     │   │   ├── exceptions
+    │   │   │   ├── custom
+    │   │   │   │   ├── AlreadyExistException.java
+    │   │   │   │   ├── AuthenticationException.java
+    │   │   │   │   ├── MessageException.java
+    │   │   │   │   ├── NotFoundException.java
+    │   │   │   │   └── ValidationException.java
     │   │   │   └── AppException.java
     │   │   ├── model
     │   │   │   └── BaseEntity.java
@@ -136,3 +136,4 @@ example/
     │   └── GlobalExceptionHandler.java
     └── AuthStarterApplication.java
 ```
+
