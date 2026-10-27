@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
@@ -45,6 +46,8 @@ import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getC
 @Component
 @RequiredArgsConstructor
 public class AuthHelper {
+
+    private static final String NOT_SET = "not-set";
 
     private final UserRepo userRepo;
     private final UserMapper userMapper;
@@ -92,47 +95,53 @@ public class AuthHelper {
             throw new AuthenticationException("Google token is invalid");
         }
 
-        return idToken.getPayload();
+        GoogleIdToken.Payload payload = idToken.getPayload();
+
+        if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+            throw new AuthenticationException("Google email is not verified");
+        }
+
+        return payload;
     }
 
+    @Transactional
     public User syncGoogleWithLocal(GoogleIdToken.Payload payload){
-        boolean isNewUser = userRepo.findByEmail(payload.getEmail()).isEmpty();
+        Optional<User> found = userRepo.findByEmail(payload.getEmail());
 
-        User existingUser =  userRepo.findByEmail(payload.getEmail())
-                .orElseGet(() -> {
-                    User user = authMapper.toEntityFromGooglePayload(payload);
-
-                    eventPublisher.publishEvent(AuditRequest.log(
-                            user, REGISTER,
-                            "User created account with Google login", getClientInfo(), Map.of()));
-
-                    return userRepo.save(user);
-                });
-
-        processLockedAccount(existingUser);
-        validateAccountNotDeleted(existingUser);
-        resetAccountLock(existingUser);
-
-        if (!isNewUser && (existingUser.getFirstName().equals("not-set")
-                || existingUser.getLastName().equals("not-set"))) {
-
-            authMapper.updateEntityFromGooglePayload(payload, existingUser);
+        if (found.isEmpty()) {
+            User newUser = authMapper.toEntityFromGooglePayload(payload);
+            resolveAuthProviders(newUser, "GOOGLE");
+            User saved = userRepo.save(newUser);
 
             eventPublisher.publishEvent(AuditRequest.log(
-                    existingUser, SOCIAL_LINK,
+                    saved, REGISTER,
+                    "User created account with Google login", getClientInfo(), Map.of()));
+
+            return saved;
+        }
+
+        User user = found.get();
+
+        validateAccountNotDeleted(user);
+        processLockedAccount(user);
+        resetAccountLock(user);
+
+        if (NOT_SET.equals(user.getFirstName()) || NOT_SET.equals(user.getLastName())) {
+            authMapper.updateEntityFromGooglePayload(payload, user);
+
+            eventPublisher.publishEvent(AuditRequest.log(
+                    user, SOCIAL_LINK,
                     "Google account linked successfully", getClientInfo(), Map.of()));
         }
 
-        resolveAuthProviders(existingUser, "GOOGLE");
-        userRepo.save(existingUser);
-
-        return existingUser;
+        resolveAuthProviders(user, "GOOGLE");
+        return userRepo.save(user);
     }
 
     public NameParts extractUsernameFromEmail(String email){
         int atIndex = email.indexOf("@");
-        String firstName = "not-set";
-        String lastName = "not-set";
+        String firstName = NOT_SET;
+        String lastName = NOT_SET;
 
         if (atIndex > 0){
             String tempName = email.substring(0, atIndex);
@@ -152,7 +161,7 @@ public class AuthHelper {
 
     public AuthResponse createAuthResponse(User user, AuditAction auditAction){
         eventPublisher.publishEvent(AuditRequest.log(
-                user, auditAction, "User logged in successfully", getClientInfo(), Map.of()));
+                user, auditAction, "Authentication successful: " + auditAction.name(), getClientInfo(), Map.of()));
 
         return new AuthResponse(true, createTokenResponse(user), userMapper.toDto(user));
     }

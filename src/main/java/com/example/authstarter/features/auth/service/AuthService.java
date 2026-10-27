@@ -31,9 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -74,7 +71,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
-    private final AuthenticationManager authenticationManager;
     private final WebAuthnRelyingPartyOperations relyingPartyOperations;
     private final PublicKeyCredentialRequestOptionsRepository requestOptionsRepository;
     private final PublicKeyCredentialCreationOptionsRepository creationOptionsRepository;
@@ -102,25 +98,21 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthRequest request) {
-        User user = userRepo.findByEmail(request.email())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userRepo.findByEmailAndDeletedAtIsNull(request.email())
+                .orElseThrow(() -> new AuthenticationException("Bad Credentials"));
 
-        authHelper.validateAccountNotDeleted(user);
         authHelper.processLockedAccount(user);
 
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-
-            authHelper.resetAccountLock(user);
-            authHelper.cacheUser(user);
-
-            return authHelper.createAuthResponse(user, LOCAL_LOGIN);
-
-        } catch (BadCredentialsException e) {
+        if (user.getPassword() == null
+                || !passwordEncoder.matches(request.password(), user.getPassword())) {
             authHelper.processFailedLoginAttempt(user);
             throw new AuthenticationException("Bad Credentials");
         }
+
+        authHelper.resetAccountLock(user);
+        authHelper.cacheUser(user);
+
+        return authHelper.createAuthResponse(user, LOCAL_LOGIN);
     }
 
     public TokenResponse refresh(RefreshTokenRequest request) {
@@ -144,7 +136,7 @@ public class AuthService {
                             hash, now.minus(REFRESH_GRACE), now);
 
             if (!justRotated) {
-                throw new NotFoundException("Refresh token is invalid or expired");
+                throw new AuthenticationException("Refresh token is invalid or expired");
             }
         }
 
@@ -196,7 +188,7 @@ public class AuthService {
             return PasskeyOptionsResponse.toResponse(options);
         }
 
-        throw new IllegalStateException("User not found in context holder");
+        throw new AuthenticationException("Authentication required to register a passkey");
 
     }
 
@@ -214,6 +206,7 @@ public class AuthService {
 
             User existingUser = authHelper.getUserFromDatabase(userId);
             authHelper.resolveAuthProviders(existingUser, "PASSKEY");
+            authHelper.updateCache(existingUser);
 
             eventPublisher.publishEvent(
                     AuditRequest.log(existingUser, PASSKEY_LINK,
@@ -250,9 +243,8 @@ public class AuthService {
             PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
             UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
-            User user = authHelper.getUser(userId);
+            User user = authHelper.getUserFromDatabase(userId);
             authHelper.processLockedAccount(user);
-            authHelper.validateAccountNotDeleted(user);
             authHelper.resetAccountLock(user);
             authHelper.cacheUser(user);
 
@@ -269,13 +261,12 @@ public class AuthService {
         return passkeyMapper.toDto(passkeys);
     }
 
-    public void deleteSavedPasskey(UUID passkeyId, UUID userId) {
+    public void deleteSavedPasskey(UUID userId, UUID passkeyId) {
         Passkey passkey = passkeyRepo.findById(passkeyId)
+                .filter(p -> p.getUserId().equals(userId))
                 .orElseThrow(() -> new NotFoundException("Passkey not found"));
 
-        if (passkey.getUserId().equals(userId)){
-            passkeyRepo.delete(passkey);
-        }
+        passkeyRepo.delete(passkey);
     }
 
     /**
@@ -296,6 +287,10 @@ public class AuthService {
     public void verifyEmail(String token) {
         Verification verification = evtService.validateEVT(token);
 
+        if (verification.newEmail() != null) {
+            throw new ValidationException("Invalid verification token");
+        }
+
         User user = authHelper.getUserFromDatabase(UUID.fromString(verification.userId()));
         user.setEmailVerified(true);
 
@@ -310,7 +305,7 @@ public class AuthService {
         String newEmail = request.newEmail();
 
         if (user.getPassword() == null) {
-            throw new IllegalStateException("Cannot reset email with empty password");
+            throw new ValidationException("Set a password before changing your email");
         }
 
         authHelper.validateEmailNotRegistered(newEmail);
@@ -321,12 +316,20 @@ public class AuthService {
 
     public void confirmEmailChange(String token) {
         Verification verification = evtService.validateEVT(token);
-        User user = authHelper.getUserFromDatabase(UUID.fromString(verification.userId()));
-
-        String oldEmail = user.getEmail();
         String newEmail = verification.newEmail();
 
+        if (newEmail == null) {
+            throw new ValidationException("Invalid email change token");
+        }
+
+        // Someone may have registered this address since the token was issued
+        authHelper.validateEmailNotRegistered(newEmail);
+
+        User user = authHelper.getUserFromDatabase(UUID.fromString(verification.userId()));
+        String oldEmail = user.getEmail();
+
         user.setEmail(newEmail);
+        user.setEmailVerified(true);
         authHelper.updateCache(user);
 
         eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_CHANGED,
@@ -339,19 +342,19 @@ public class AuthService {
      */
 
     public void requestPasswordReset(ForgotPasswordRequest request) {
-        User user = userRepo.findByEmailAndDeletedAtIsNull(request.email())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        // Always return silently so this endpoint can't be used to discover which emails exist.
+        userRepo.findByEmailAndDeletedAtIsNull(request.email()).ifPresent(user -> {
+            boolean hasNoPassword = user.getPassword() == null;
+            boolean isNotGoogleUser = !"GOOGLE".equals(user.getProvider());
 
-        boolean hasNoPassword = user.getPassword() == null;
-        boolean isNotGoogleUser = !"GOOGLE".equals(user.getProvider());
+            if (hasNoPassword && isNotGoogleUser) {
+                emailService.sendSocialLoginReminder(user, user.getProvider());
+                return;
+            }
 
-        if (hasNoPassword && isNotGoogleUser) {
-            emailService.sendSocialLoginReminder(user, user.getProvider());
-            throw new IllegalStateException("Cannot request password-reset for non-local account");
-        }
-
-        String rawToken = prtService.generatePRT(user.getId().toString());
-        emailService.sendPasswordResetEmail(user, rawToken);
+            String rawToken = prtService.generatePRT(user.getId().toString());
+            emailService.sendPasswordResetEmail(user, rawToken);
+        });
     }
 
     public void resetPassword(ResetPasswordRequest request) {

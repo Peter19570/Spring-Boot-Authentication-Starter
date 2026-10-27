@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -67,19 +68,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIdentifier(HttpServletRequest request) {
-        String forwarded = request.getHeader(HEADER_NAME);
-        if (forwarded != null && !forwarded.isEmpty()) {
-            return forwarded.split(",")[0].trim();
-        }
+        // Don't read X-Forwarded-For here: any client can spoof it and get a fresh bucket every request.
+        // Behind a trusted proxy, set server.forward-headers-strategy=native so Tomcat resolves the real IP.
         return request.getRemoteAddr();
     }
 
-    private void sendRateLimitResponse(HttpServletResponse response, long retryAfter) throws IOException {
+    private void sendRateLimitResponse(HttpServletResponse response, long nanosToWait) throws IOException {
+        long retryAfterSeconds = Math.max(1, (long) Math.ceil(nanosToWait / 1_000_000_000.0));
+
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+        response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds));
         response.setContentType(CONTENT_TYPE);
         response.getWriter().write(
                 objectMapper.writeValueAsString(
-                        Map.of("message", "Too many requests", "retryAfter", retryAfter))
+                        Map.of("message", "Too many requests", "retryAfter", retryAfterSeconds))
         );
     }
 }

@@ -1,10 +1,8 @@
 package com.example.authstarter.features.auth.config.jwt;
 
 import com.example.authstarter.features.auth.dto.internal.JwtClaims;
-import com.example.authstarter.features.shared.exceptions.custom.AuthenticationException;
-import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.UserPrincipal;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,11 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -33,8 +28,15 @@ import static com.example.authstarter.features.auth.constants.JwtConstants.*;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
+    /** Request attribute read by RestSecurityHandlers to explain a 401. */
+    public static final String AUTH_ERROR_ATTRIBUTE = "auth.error";
+
     private final JwtService jwtService;
-    private final ObjectMapper objectMapper;
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        return OPTIONS_HTTP_METHOD.equals(request.getMethod());
+    }
 
     @Override
     protected void doFilterInternal(
@@ -43,40 +45,39 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String jwt = getTokenFromRequest(request);
+        String jwt = getTokenFromRequest(request);
 
-        if (OPTIONS_HTTP_METHOD.equals(request.getMethod())) {
-            filterChain.doFilter(request, response);
-            return;
+        if (jwt != null) {
+            authenticate(jwt, request);
         }
 
-        if (jwt == null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        // Never reject here: public endpoints must work even with a stale token.
+        // Protected endpoints get a 401 from the authentication entry point.
+        filterChain.doFilter(request, response);
+    }
 
+    private void authenticate(String jwt, HttpServletRequest request) {
         try {
-            JwtClaims jwtClaims = jwtService.extractToken(jwt);
+            JwtClaims claims = jwtService.extractToken(jwt);
 
-            UserPrincipal principal = UserPrincipal.fromToken(
-                    jwtClaims.userId(), jwtClaims.email(), jwtClaims.authorities());
-
-            if (jwtService.isTokenValid(jwtClaims.expired())) {
-                if (!jwtClaims.tokenType().equals(ACCESS_VALUE)){
-                    throw new AuthenticationException("Invalid token type. Access token required.");
-                }
-
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        principal, null, principal.getAuthorities());
-
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            if (!ACCESS_VALUE.equals(claims.tokenType())) {
+                request.setAttribute(AUTH_ERROR_ATTRIBUTE, "Invalid token type. Access token required.");
+                return;
             }
 
-            filterChain.doFilter(request, response);
+            UserPrincipal principal = UserPrincipal.fromToken(
+                    claims.userId(), claims.email(), claims.authorities());
 
-        } catch (JwtException | UsernameNotFoundException | AuthenticationException e) {
-            handleException(response, e.getMessage());
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    principal, null, principal.getAuthorities());
+
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+
+        } catch (ExpiredJwtException e) {
+            request.setAttribute(AUTH_ERROR_ATTRIBUTE, "Token has expired");
+        } catch (JwtException | IllegalArgumentException e) {
+            request.setAttribute(AUTH_ERROR_ATTRIBUTE, "Invalid token");
         }
     }
 
@@ -98,12 +99,5 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         return null;
-    }
-
-    private void handleException(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(
-                ApiResponse.error(HttpStatus.UNAUTHORIZED.name(), message)));
     }
 }

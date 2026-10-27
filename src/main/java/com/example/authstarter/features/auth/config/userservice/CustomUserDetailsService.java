@@ -4,13 +4,13 @@ import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
-@Configuration
+@Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CustomUserDetailsService implements UserDetailsService {

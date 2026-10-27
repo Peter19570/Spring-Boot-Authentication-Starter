@@ -1,7 +1,7 @@
 package com.example.authstarter.features.auth.config.security;
 
 import com.example.authstarter.features.auth.config.jwt.JwtFilter;
-import jakarta.servlet.http.HttpServletResponse;
+import com.example.authstarter.features.auth.config.ratelimit.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +29,8 @@ import static com.example.authstarter.features.auth.constants.SecurityConstants.
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final RateLimitFilter rateLimitFilter;
+    private final RestSecurityHandlers securityHandlers;
 
     @Bean
     public SecurityFilterChain filterChain(
@@ -40,10 +42,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(
-                                (_, response, _)
-                                        -> response.sendError(
-                                        HttpServletResponse.SC_UNAUTHORIZED, UNAUTHORIZED_MSG)))
+                        .authenticationEntryPoint(securityHandlers)
+                        .accessDeniedHandler(securityHandlers))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, PATTERN_URLS).permitAll()
                         .requestMatchers(PUBLIC_URLS).permitAll()
@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(ACTUATOR_URLS).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFilter, JwtFilter.class)
                 .build();
     }
 

@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -52,10 +53,6 @@ public class JwtService {
         return createToken(claims, principal.id().toString(), refreshTokenExpiration.toMillis());
     }
 
-    public boolean isTokenValid(boolean expiredToken) {
-        return !expiredToken;
-    }
-
     public JwtClaims extractToken(String token){
         Claims claims = extractAllClaims(token);
         return JwtClaims.extracted(claims);
@@ -81,8 +78,14 @@ public class JwtService {
                 .compact();
     }
 
+    private SecretKey signingKey;
+
+    @PostConstruct
+    void init() {
+        this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
+    }
+
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return signingKey;
     }
 }
