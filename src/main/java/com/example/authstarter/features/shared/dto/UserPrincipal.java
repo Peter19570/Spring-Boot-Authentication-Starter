@@ -49,4 +49,9 @@ public record UserPrincipal( // Adjust to add more info into context holder
     public String getUsername() {
         return this.email;
     }
+
+    @Override
+    public String toString() {
+        return "UserPrincipal[id=" + id + ", email=" + email + "]"; // never print the password hash
+    }
 }

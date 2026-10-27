@@ -10,27 +10,23 @@ public final class RateLimitConstants {
 
     private RateLimitConstants () {}
 
-    public static final String HEADER_NAME = "X-Forwarded-For";
-
     public static final String CONTENT_TYPE = "application/json";
 
-    public static final String[] RATE_LIMITED_ENDPOINTS = {
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh",
-            "/api/v1/auth/register",
-            "/api/v1/auth/reset-password",
-            "/api/v1/auth/forgot-password",
-            "/api/v1/auth/passkeys/challenge",
-            "/api/v1/auth/resend-verification-email"
-    };
-
-    public static final Map<String, Bandwidth> ENDPOINT_LIMITS = Map.of(
-            "/api/v1/auth/login", Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))),
-            "/api/v1/auth/refresh", Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))),
-            "/api/v1/auth/register", Bandwidth.classic(3, Refill.greedy(3, Duration.ofHours(1))),
-            "/api/v1/auth/forgot-password", Bandwidth.classic(3, Refill.greedy(3, Duration.ofHours(1))),
-            "/api/v1/auth/reset-password", Bandwidth.classic(5, Refill.greedy(5, Duration.ofHours(1))),
-            "/api/v1/auth/resend-verification-email", Bandwidth.classic(2, Refill.greedy(2, Duration.ofHours(1))),
-            "/api/v1/auth/passkeys/challenge", Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1)))
+    /** Single source of truth: the keys are the rate-limited paths (exact match). */
+    public static final Map<String, Bandwidth> ENDPOINT_LIMITS = Map.ofEntries(
+            Map.entry("/api/v1/auth/login", limit(5, Duration.ofMinutes(1))),
+            Map.entry("/api/v1/auth/google", limit(10, Duration.ofMinutes(1))),
+            Map.entry("/api/v1/auth/refresh", limit(10, Duration.ofMinutes(1))),
+            Map.entry("/api/v1/auth/register", limit(3, Duration.ofHours(1))),
+            Map.entry("/api/v1/auth/forgot-password", limit(3, Duration.ofHours(1))),
+            Map.entry("/api/v1/auth/reset-password", limit(5, Duration.ofHours(1))),
+            Map.entry("/api/v1/auth/change-email", limit(3, Duration.ofHours(1))),
+            Map.entry("/api/v1/auth/resend-verification-email", limit(2, Duration.ofHours(1))),
+            Map.entry("/api/v1/auth/passkeys/challenge", limit(10, Duration.ofMinutes(1))),
+            Map.entry("/api/v1/auth/passkeys/login", limit(10, Duration.ofMinutes(1)))
     );
+
+    private static Bandwidth limit(long capacity, Duration period) {
+        return Bandwidth.classic(capacity, Refill.greedy(capacity, period));
+    }
 }

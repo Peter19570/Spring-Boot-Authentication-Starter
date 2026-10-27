@@ -21,13 +21,13 @@ public class EVTService { // Email Verification Token
     }
 
     public Verification validateEVT(String token){
-        Verification userData = evtStore.getIfPresent(token);
+        // remove() is atomic: two concurrent requests can't both consume the same token
+        Verification userData = evtStore.asMap().remove(token);
 
         if (userData == null){
-            throw new NotFoundException("Invalid or expired otpToken");
+            throw new NotFoundException("Invalid or expired verification token");
         }
 
-        evtStore.invalidate(token);
         return userData;
     }
 }

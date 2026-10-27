@@ -20,13 +20,12 @@ public class PRTService { // Password-Reset Token
     }
 
     public String validatePRT(String token){
-        String userId = prtStore.getIfPresent(token);
+        String userId = prtStore.asMap().remove(token);
 
         if (userId == null){
-            throw new NotFoundException("Invalid or expired otpToken");
+            throw new NotFoundException("Invalid or expired reset token");
         }
 
-        prtStore.invalidate(token);
         return userId;
     }
 }

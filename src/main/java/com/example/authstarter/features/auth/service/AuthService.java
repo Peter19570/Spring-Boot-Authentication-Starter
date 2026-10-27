@@ -29,7 +29,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,7 +50,6 @@ import static com.example.authstarter.features.audit.enums.AuditAction.*;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_GRACE;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
-import static com.example.authstarter.features.shared.constants.CacheConstants.*;
 import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Service
@@ -143,21 +141,17 @@ public class AuthService {
         return authHelper.createTokenResponse(user);
     }
 
-    @CacheEvict(cacheNames = USERS, key = "#userId")
-    public void logout(RefreshTokenRequest request, UUID userId) {
-        User user = authHelper.getUser(userId);
+    public void logout(RefreshTokenRequest request) {
+        // revokedAt is deliberately NOT set: it would make this token eligible for the refresh grace window.
+        refreshTokenRepo.findByTokenHash(hashToken(request.refreshToken())).ifPresent(token -> {
+            token.setRevoked(true);
 
-        boolean revoked = refreshTokenRepo.findByTokenHash(hashToken(request.refreshToken()))
-                .map(token -> {
-                    token.setRevoked(true);
-                    refreshTokenRepo.save(token);
-                    return true;
-                })
-                .orElse(false);
+            User user = authHelper.getUserFromDatabase(token.getUser().getId());
+            authHelper.updateCache(user);
 
-        String message = (revoked) ? "User logout success" : "User logged out without token revoke";
-
-        eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, message, getClientInfo(), Map.of()));
+            eventPublisher.publishEvent(AuditRequest.log(
+                    user, LOGOUT, "User logout success", getClientInfo(), Map.of()));
+        });
     }
 
     public AuthResponse googleLogin(GoogleRequest request) {
@@ -362,6 +356,7 @@ public class AuthService {
 
         User user = authHelper.getUserFromDatabase(UUID.fromString(userId));
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+        refreshTokenRepo.deleteAllByUserId(user.getId());
         user.setLocked(false);
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);

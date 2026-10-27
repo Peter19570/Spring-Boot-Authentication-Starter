@@ -17,7 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static com.example.authstarter.features.auth.constants.RateLimitConstants.*;
 
@@ -35,7 +34,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String matchedEndpoint = matchEndpoint(request.getRequestURI());
+        String matchedEndpoint = matchEndpoint(request.getServletPath());
         if (matchedEndpoint == null) {
             filterChain.doFilter(request, response);
             return;
@@ -61,10 +60,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String matchEndpoint(String path) {
-        return Stream.of(RATE_LIMITED_ENDPOINTS)
-                .filter(path::startsWith)
-                .findFirst()
-                .orElse(null);
+        return ENDPOINT_LIMITS.containsKey(path) ? path : null;
     }
 
     private String getClientIdentifier(HttpServletRequest request) {

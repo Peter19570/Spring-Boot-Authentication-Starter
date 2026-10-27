@@ -48,7 +48,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, PATTERN_URLS).permitAll()
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(SWAGGER_URLS).permitAll()
-                        .requestMatchers(WEBSOCKET_URLS).permitAll()
                         .requestMatchers(ACTUATOR_URLS).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
