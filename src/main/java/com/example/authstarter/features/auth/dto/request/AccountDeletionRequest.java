@@ -1,14 +1,15 @@
 package com.example.authstarter.features.auth.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record AccountDeletionRequest(
-        @NotBlank(message = "Password is required")
-        @Size(min = 6, max = 128, message = "Password must be between 8 and 128 characters")
+        // Optional: only required for accounts that have a password (Google / passkey-only accounts have none)
+        @Size(max = 128, message = "Password must not exceed 128 characters")
         String password,
 
         @NotBlank(message = "Verification code is required")
-        @Size(min = 6, max = 6, message = "OTP must be 6 characters")
+        @Pattern(regexp = "^[0-9\\s]{6,12}$", message = "OTP must be 6 digits")
         String otp
 ) {}

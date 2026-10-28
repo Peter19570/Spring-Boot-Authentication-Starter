@@ -11,6 +11,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,7 +28,8 @@ public class AuditController {
     private final AuditService auditService;
 
     @GetMapping
-    @Operation(summary = "Retrieve audit records.")
+    @PreAuthorize("hasRole('ADMIN')") // every user's audit log: fail closed until a role system exists
+    @Operation(summary = "Retrieve all audit records (admin only).")
     public ResponseEntity<ApiResponse<PageResponse<AuditResponse>>> getAllAudits(
             @ParameterObject @PageableDefault(sort = SORT, direction = DESC, size = 30, page = 1) Pageable pageable
     ) {

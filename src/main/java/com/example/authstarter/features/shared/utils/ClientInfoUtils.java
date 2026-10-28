@@ -1,18 +1,19 @@
 package com.example.authstarter.features.shared.utils;
 
 import com.example.authstarter.features.shared.dto.ClientInfo;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-@Component
-public class ClientInfoUtils {
+public final class ClientInfoUtils {
+
+    private ClientInfoUtils() {}
 
     public static ClientInfo getClientInfo(){
-        HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder
-                .currentRequestAttributes()).getRequest();
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+            return ClientInfo.save(attributes.getRequest());
+        }
 
-        return ClientInfo.save(req);
+        // No HTTP request bound to this thread (async work, scheduled job): don't crash, just log no client
+        return new ClientInfo(null, null);
     }
 }

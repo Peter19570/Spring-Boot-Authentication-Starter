@@ -13,9 +13,6 @@ import static com.example.authstarter.features.auth.constants.AsyncConstants.*;
 @EnableAsync
 public class AsyncConfig {
 
-    /** Executor for audit-log writes (used by AuditService); moves to AsyncConstants later. */
-    public static final String AUDIT_EXECUTOR = "auditExecutor";
-
     // No manual initialize(): Spring initializes (and on shutdown, drains) executors declared as beans.
 
     @Bean(name = EMAIL_EXECUTOR)
@@ -34,10 +31,10 @@ public class AsyncConfig {
     @Bean(name = AUDIT_EXECUTOR)
     public ThreadPoolTaskExecutor auditExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(1000);
-        executor.setThreadNamePrefix("audit-");
+        executor.setCorePoolSize(AUDIT_CORE_POOL_SIZE);
+        executor.setMaxPoolSize(AUDIT_MAX_POOL_SIZE);
+        executor.setQueueCapacity(AUDIT_QUEUE_CAPACITY);
+        executor.setThreadNamePrefix(AUDIT_THREAD);
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(30);

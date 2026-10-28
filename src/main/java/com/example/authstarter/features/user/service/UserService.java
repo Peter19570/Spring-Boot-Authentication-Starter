@@ -56,14 +56,16 @@ public class UserService {
     public void confirmSoftDelete(UUID userId, AccountDeletionRequest request) {
         User currentUser = authHelper.getUserFromDatabase(userId);
 
-        if (currentUser.getPassword() != null) {
-            if (!passwordEncoder.matches(request.password(), currentUser.getPassword())) {
-                throw new ValidationException("Invalid password provided for account deletion.");
-            }
-        }
-
+        // The emailed, attempt-limited code is checked first: someone holding only a stolen access token
+        // can never reach the password check, so this endpoint can't be used to guess passwords.
         otpService.validateOtp(currentUser.getId().toString(),
                 request.otp().replaceAll("\\s+", ""));
+
+        if (currentUser.getPassword() != null
+                && (request.password() == null
+                    || !passwordEncoder.matches(request.password(), currentUser.getPassword()))) {
+            throw new ValidationException("Invalid password provided for account deletion.");
+        }
 
         currentUser.setDeletedAt(Instant.now());
         refreshTokenRepo.deleteAllByUserId(currentUser.getId());

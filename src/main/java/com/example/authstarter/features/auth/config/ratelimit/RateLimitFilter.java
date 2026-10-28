@@ -1,5 +1,6 @@
 package com.example.authstarter.features.auth.config.ratelimit;
 
+import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.bucket4j.Bucket;
@@ -77,7 +78,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setContentType(CONTENT_TYPE);
         response.getWriter().write(
                 objectMapper.writeValueAsString(
-                        Map.of("message", "Too many requests", "retryAfter", retryAfterSeconds))
+                        ApiResponse.error(HttpStatus.TOO_MANY_REQUESTS.name(),
+                                Map.of("message", "Too many requests", "retryAfter", retryAfterSeconds)))
         );
     }
 }

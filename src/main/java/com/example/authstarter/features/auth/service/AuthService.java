@@ -247,16 +247,15 @@ public class AuthService {
     }
 
     public List<PasskeyResponse> findAllUserPasskeys(UUID userId) {
-        List<Passkey> passkeys = passkeyRepo.findAllByUserId(userId);
+        List<Passkey> passkeys = passkeyRepo.findAllByUserIdOrderByCreatedAtDesc(userId);
         return passkeyMapper.toDto(passkeys);
     }
 
     public void deleteSavedPasskey(UUID userId, UUID passkeyId) {
-        Passkey passkey = passkeyRepo.findById(passkeyId)
-                .filter(p -> p.getUserId().equals(userId))
-                .orElseThrow(() -> new NotFoundException("Passkey not found"));
-
-        passkeyRepo.delete(passkey);
+        // One statement scoped to the owner: another user's passkey can't be touched or even detected
+        if (passkeyRepo.deleteByIdAndUserId(passkeyId, userId) == 0) {
+            throw new NotFoundException("Passkey not found");
+        }
     }
 
     /**
