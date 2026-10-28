@@ -5,6 +5,6 @@ import org.springframework.http.HttpStatus;
 
 public class MessageException extends AppException {
     public MessageException(String message, Exception e) {
-        super(message, HttpStatus.INTERNAL_SERVER_ERROR);
+        super(message, HttpStatus.INTERNAL_SERVER_ERROR, e);
     }
 }

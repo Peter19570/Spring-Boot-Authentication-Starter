@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 import static com.example.authstarter.features.auth.constants.AsyncConstants.AUDIT_EXECUTOR;
 
 @Service
@@ -45,6 +47,11 @@ public class AuditService {
 
     public PageResponse<AuditResponse> getAllAudits(Pageable pageable){
         Page<AuditLog> responses = auditRepo.findAll(pageable);
+        return PageResponse.from(responses.map(auditMapper::toDto));
+    }
+
+    public PageResponse<AuditResponse> getUserAudits(UUID userId, Pageable pageable){
+        Page<AuditLog> responses = auditRepo.findAllByUserId(userId, pageable);
         return PageResponse.from(responses.map(auditMapper::toDto));
     }
 

@@ -40,6 +40,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<String>> handleAppException(AppException ex) {
+        if (ex.getStatus().is5xxServerError()) {
+            log.error("Server-side application error", ex);
+        }
+
         return ResponseEntity.status(ex.getStatus())
                 .body(ApiResponse.error(ex.getStatus().name(), ex.getMessage()));
     }

@@ -16,7 +16,7 @@ public record PageResponse<T>(
     public static <T> PageResponse<T> from (Page<T> page){
         return new PageResponse<>(
                 page.getContent(),
-                page.getNumber(),
+                page.getNumber() + 1, // the API is 1-based (one-indexed-parameters=true), so report it that way
                 page.getSize(),
                 page.getNumberOfElements(),
                 page.getTotalElements(),
