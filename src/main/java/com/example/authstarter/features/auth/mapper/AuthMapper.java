@@ -1,7 +1,7 @@
 package com.example.authstarter.features.auth.mapper;
 
 import com.example.authstarter.features.auth.dto.internal.NameParts;
-import com.example.authstarter.features.auth.dto.request.AuthRequest;
+import com.example.authstarter.features.auth.dto.request.RegisterRequest;
 import com.example.authstarter.features.user.model.User;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.mapstruct.*;
@@ -15,7 +15,7 @@ public interface AuthMapper {
     @Mapping(target = "provider", constant = "LOCAL")
     @Mapping(target = "firstName", source = "names.firstName")
     @Mapping(target = "lastName", source = "names.lastName")
-    User toEntityFromAuthRequest(AuthRequest request, NameParts names);
+    User toEntityFromAuthRequest(RegisterRequest request, NameParts names);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", expression = "java(payload.getEmail())")

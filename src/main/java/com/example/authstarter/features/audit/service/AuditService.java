@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.example.authstarter.features.auth.config.async.AsyncConfig.AUDIT_EXECUTOR;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -23,7 +25,7 @@ public class AuditService {
     private final AuditRepo auditRepo;
     private final AuditMapper auditMapper;
 
-    @Async
+    @Async(AUDIT_EXECUTOR)
     @EventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createAuditLog(AuditRequest request) {

@@ -7,18 +7,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Collections;
+import java.util.List;
 
 @Configuration
 public class GoogleConfig {
 
+    // Comma-separated: one client ID per platform (web, Android, iOS). A token's "aud" must match one of them.
     @Value("${google.client.id}")
-    private String clientId;
+    private List<String> clientIds;
 
     @Bean
     public GoogleIdTokenVerifier googleIdTokenVerifier() {
         return new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                .setAudience(Collections.singletonList(clientId))
+                .setAudience(clientIds)
                 .build();
     }
 }

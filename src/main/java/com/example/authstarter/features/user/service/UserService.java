@@ -7,13 +7,13 @@ import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.auth.service.memory.OTPService;
+import com.example.authstarter.features.shared.exceptions.custom.ValidationException;
 import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
 import com.example.authstarter.features.user.mapper.UserMapper;
 import com.example.authstarter.features.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +58,7 @@ public class UserService {
 
         if (currentUser.getPassword() != null) {
             if (!passwordEncoder.matches(request.password(), currentUser.getPassword())) {
-                throw new BadCredentialsException("Invalid password provided for account deletion.");
+                throw new ValidationException("Invalid password provided for account deletion.");
             }
         }
 

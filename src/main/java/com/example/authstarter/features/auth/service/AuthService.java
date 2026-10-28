@@ -74,7 +74,7 @@ public class AuthService {
      * MAJOR AUTHENTICATION METHODS HERE
      */
 
-    public AuthResponse register(AuthRequest request) {
+    public AuthResponse register(RegisterRequest request) {
         String email = request.email();
 
         NameParts names = authHelper.extractUsernameFromEmail(email);
@@ -299,7 +299,7 @@ public class AuthService {
         }
 
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-            throw new AuthenticationException("Current password is incorrect");
+            throw new ValidationException("Current password is incorrect");
         }
 
         authHelper.validateEmailNotRegistered(newEmail);

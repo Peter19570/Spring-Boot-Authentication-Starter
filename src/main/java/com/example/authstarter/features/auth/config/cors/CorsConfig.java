@@ -19,6 +19,11 @@ public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        if (allowedOrigins.contains("*")) {
+            // allowCredentials(true) + "*" would let any website make credentialed requests to the API
+            throw new IllegalStateException("app.cors.allowed-origins must list exact origins, not '*'");
+        }
+
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(allowedOrigins);
         config.setAllowedMethods(ALLOWED_METHODS);

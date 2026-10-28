@@ -39,7 +39,7 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Register a new user account.")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
-            @Valid @RequestBody AuthRequest request
+            @Valid @RequestBody RegisterRequest request
     ) {
         AuthResponse response = authService.register(request);
         return ResponseEntity

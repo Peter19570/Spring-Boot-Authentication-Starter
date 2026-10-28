@@ -48,6 +48,8 @@ import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getC
 public class AuthHelper {
 
     private static final String NOT_SET = "not-set";
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+    private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
 
     private final UserRepo userRepo;
     private final UserMapper userMapper;
@@ -185,17 +187,25 @@ public class AuthHelper {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processFailedLoginAttempt(User user){
-        int newAttempts = user.getFailedLoginAttempts() + 1;
-        user.setFailedLoginAttempts(newAttempts);
+        // Fresh row, locked for this transaction: parallel wrong guesses are counted one at a time
+        User fresh = userRepo.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (newAttempts >= 5) {
-            user.setLocked(true);
-            user.setLockedUntil(Instant.now().plus(Duration.ofMinutes(15)));
+        // The caller's own unlock is rolled back with its transaction, so redo it here
+        if (fresh.isLocked() && fresh.getLockedUntil() != null
+                && fresh.getLockedUntil().isBefore(Instant.now())) {
+            resetAccountLock(fresh);
         }
 
-        userRepo.save(user);
+        int newAttempts = fresh.getFailedLoginAttempts() + 1;
+        fresh.setFailedLoginAttempts(newAttempts);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, LOGIN_ATTEMPT,
+        if (newAttempts >= MAX_FAILED_ATTEMPTS) {
+            fresh.setLocked(true);
+            fresh.setLockedUntil(Instant.now().plus(LOCK_DURATION));
+        }
+
+        eventPublisher.publishEvent(AuditRequest.log(fresh, LOGIN_ATTEMPT,
                 "User attempted login with incorrect password", getClientInfo(),
                 Map.of("message", "Failed login attempts: " + newAttempts)));
     }

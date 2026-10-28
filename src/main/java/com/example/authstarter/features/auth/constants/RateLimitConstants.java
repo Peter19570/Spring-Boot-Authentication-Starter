@@ -21,6 +21,7 @@ public final class RateLimitConstants {
             Map.entry("/api/v1/auth/forgot-password", limit(3, Duration.ofHours(1))),
             Map.entry("/api/v1/auth/reset-password", limit(5, Duration.ofHours(1))),
             Map.entry("/api/v1/auth/change-email", limit(3, Duration.ofHours(1))),
+            Map.entry("/api/v1/users/me/deletion-request", limit(3, Duration.ofHours(1))),
             Map.entry("/api/v1/auth/resend-verification-email", limit(2, Duration.ofHours(1))),
             Map.entry("/api/v1/auth/passkeys/challenge", limit(10, Duration.ofMinutes(1))),
             Map.entry("/api/v1/auth/passkeys/login", limit(10, Duration.ofMinutes(1)))
