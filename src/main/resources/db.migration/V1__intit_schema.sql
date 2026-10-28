@@ -5,7 +5,7 @@ create table audit_logs (
                             id uuid not null,
                             user_id uuid not null,
                             description varchar(350) not null,
-                            action varchar(255) not null check ((action in ('REGISTER','LOCAL_LOGIN','OAUTH_LOGIN','PASSKEY_LOGIN','LOGIN_FAILURE','LOGIN_ATTEMPT','LOGOUT','PASSWORD_RESET','EMAIL_VERIFIED','EMAIL_CHANGED','ACCOUNT_SOFT_DELETED','ACCOUNT_HARD_DELETED','SOCIAL_LINK','SOCIAL_UNLINK','PASSKEY_LINK'))),
+                            action varchar(255) not null check ((action in ('REGISTER','LOCAL_LOGIN','OAUTH_LOGIN','PASSKEY_LOGIN','LOGIN_FAILURE','LOGIN_ATTEMPT','LOGOUT','PASSWORD_RESET','EMAIL_VERIFIED','EMAIL_CHANGED','ACCOUNT_SOFT_DELETED','ACCOUNT_HARD_DELETED','SOCIAL_LINK','SOCIAL_UNLINK','PASSKEY_LINK','PASSKEY_UNLINK','TOKEN_REUSE_DETECTED'))),
                             email varchar(255) not null,
                             full_name varchar(255) not null,
                             ip_address varchar(255),
@@ -15,12 +15,15 @@ create table audit_logs (
 );
 
 create table passkeys (
+                          backup_eligible boolean default false not null,
+                          backup_state boolean default false not null,
+                          uv_initialized boolean default false not null,
                           created_at timestamp(6) with time zone not null,
                           last_used timestamp(6) with time zone,
                           signature_count bigint not null,
                           updated_at timestamp(6) with time zone not null,
                           id uuid not null,
-                          user_id uuid not null unique,
+                          user_id uuid not null,
                           attestation_client_datajson TEXT,
                           attestation_object TEXT,
                           credential_id varchar(255) not null unique,
@@ -58,69 +61,20 @@ create table users (
                        primary key (id)
 );
 
-alter table if exists refresh_tokens
-    add constraint FK1lih5y2npsf8u5o3vhdb9y0os
-    foreign key (user_id)
-    references users;
+create index idx_audit_logs_user_id
+    on audit_logs (user_id);
 
-create table audit_logs (
-                            created_at timestamp(6) with time zone not null,
-                            updated_at timestamp(6) with time zone not null,
-                            id uuid not null,
-                            user_id uuid not null,
-                            description varchar(350) not null,
-                            action varchar(255) not null check ((action in ('REGISTER','LOCAL_LOGIN','OAUTH_LOGIN','PASSKEY_LOGIN','LOGIN_FAILURE','LOGIN_ATTEMPT','LOGOUT','PASSWORD_RESET','EMAIL_VERIFIED','EMAIL_CHANGED','ACCOUNT_SOFT_DELETED','ACCOUNT_HARD_DELETED','SOCIAL_LINK','SOCIAL_UNLINK','PASSKEY_LINK'))),
-                            email varchar(255) not null,
-                            full_name varchar(255) not null,
-                            ip_address varchar(255),
-                            user_agent varchar(255),
-                            metadata jsonb,
-                            primary key (id)
-);
+create index idx_audit_logs_created_at
+    on audit_logs (created_at);
 
-create table passkeys (
-                          created_at timestamp(6) with time zone not null,
-                          last_used timestamp(6) with time zone,
-                          signature_count bigint not null,
-                          updated_at timestamp(6) with time zone not null,
-                          id uuid not null,
-                          user_id uuid not null unique,
-                          attestation_client_datajson TEXT,
-                          attestation_object TEXT,
-                          credential_id varchar(255) not null unique,
-                          label varchar(255),
-                          public_key TEXT not null,
-                          primary key (id)
-);
+create index idx_passkeys_user_id
+    on passkeys (user_id);
 
-create table refresh_tokens (
-                                revoked boolean not null,
-                                created_at timestamp(6) with time zone,
-                                expires_at timestamp(6) with time zone not null,
-                                revoked_at timestamp(6) with time zone,
-                                id uuid not null,
-                                user_id uuid not null,
-                                token_hash varchar(255) not null unique,
-                                primary key (id)
-);
+create index idx_refresh_tokens_user_id
+    on refresh_tokens (user_id);
 
-create table users (
-                       email_verified boolean not null,
-                       failed_login_attempts integer not null,
-                       is_locked boolean not null,
-                       created_at timestamp(6) with time zone not null,
-                       deleted_at timestamp(6) with time zone,
-                       locked_until timestamp(6) with time zone,
-                       updated_at timestamp(6) with time zone not null,
-                       id uuid not null,
-                       email varchar(255) not null unique,
-                       first_name varchar(255),
-                       last_name varchar(255),
-                       password varchar(255),
-                       picture varchar(255),
-                       provider varchar(255),
-                       primary key (id)
-);
+create index idx_refresh_tokens_expires_at
+    on refresh_tokens (expires_at);
 
 alter table if exists refresh_tokens
     add constraint FK1lih5y2npsf8u5o3vhdb9y0os
