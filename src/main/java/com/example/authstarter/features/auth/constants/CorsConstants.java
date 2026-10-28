@@ -27,5 +27,5 @@ public final class CorsConstants {
             "ngrok-skip-browser-warning"
     );
 
-    public static final List<String> ALLOWED_EXPOSED_HEADERS = List.of("Authorization");
+    public static final List<String> ALLOWED_EXPOSED_HEADERS = List.of("Retry-After");
 }

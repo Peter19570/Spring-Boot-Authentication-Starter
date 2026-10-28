@@ -211,12 +211,10 @@ public class AuthHelper {
     }
 
     public void resolveAuthProviders(User user, String targetProvider){
-        String provider = user.getProvider();
-
-        if (provider == null) {
+        if (user.getProvider() == null) {
             user.setProvider(targetProvider);
-        } else if (!provider.contains(targetProvider)) {
-            user.setProvider(provider + "," + targetProvider);
+        } else if (!user.hasProvider(targetProvider)) {
+            user.setProvider(user.getProvider() + "," + targetProvider);
         }
     }
 

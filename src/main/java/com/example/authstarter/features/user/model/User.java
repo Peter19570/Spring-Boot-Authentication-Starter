@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 @Entity
 @Getter
@@ -38,6 +39,11 @@ public class User extends BaseEntity {
     // Add roles here
 
     public static final String NOT_SET = "not-set";
+
+    /** The provider column holds a comma-separated list (e.g. "GOOGLE,PASSKEY"). */
+    public boolean hasProvider(String name) {
+        return provider != null && Arrays.asList(provider.split(",")).contains(name);
+    }
 
     /** Full name, or null when no real name is set. */
     public String displayName() {

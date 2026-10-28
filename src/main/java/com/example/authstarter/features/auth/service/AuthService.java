@@ -134,7 +134,12 @@ public class AuthService {
                 // An already-rotated token replayed after the grace window: assume it was stolen, end every session
                 refreshTokenRepo.findByTokenHash(hash)
                         .filter(RefreshToken::isRevoked)
-                        .ifPresent(t -> refreshTokenRepo.deleteAllByUserId(user.getId()));
+                        .ifPresent(t -> {
+                            refreshTokenRepo.deleteAllByUserId(user.getId());
+                            eventPublisher.publishEvent(AuditRequest.log(user, TOKEN_REUSE_DETECTED,
+                                    "Refresh token reuse detected; all sessions revoked",
+                                    getClientInfo(), Map.of()));
+                        });
 
                 throw new AuthenticationException("Refresh token is invalid or expired");
             }
@@ -256,6 +261,10 @@ public class AuthService {
         if (passkeyRepo.deleteByIdAndUserId(passkeyId, userId) == 0) {
             throw new NotFoundException("Passkey not found");
         }
+
+        eventPublisher.publishEvent(AuditRequest.log(
+                authHelper.getUserFromDatabase(userId), PASSKEY_UNLINK,
+                "Passkey removed", getClientInfo(), Map.of()));
     }
 
     /**
@@ -338,7 +347,7 @@ public class AuthService {
         // Always return silently so this endpoint can't be used to discover which emails exist.
         userRepo.findByEmailAndDeletedAtIsNull(request.email()).ifPresent(user -> {
             boolean hasNoPassword = user.getPassword() == null;
-            boolean isNotGoogleUser = !"GOOGLE".equals(user.getProvider());
+            boolean isNotGoogleUser = !user.hasProvider("GOOGLE");
 
             if (hasNoPassword && isNotGoogleUser) {
                 emailService.sendSocialLoginReminder(user, user.getProvider());

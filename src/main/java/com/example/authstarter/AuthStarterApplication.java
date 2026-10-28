@@ -2,23 +2,18 @@ package com.example.authstarter;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
  * 𝐍𝐎𝐓𝐄 :
  * <p>
- * OTP service responsible for generating, validating, and managing OTP requests.
+ * All short-lived state in this starter lives in memory (Caffeine): email-verification, password-reset
+ * and account-deletion codes, passkey challenges, rate-limit buckets and the user cache. That is fine for
+ * a single instance, but it is lost on restart and not shared between instances.
  * </p>
  *
  * <p>
- * This implementation uses in-memory caching and Bucket4j-based rate limiting,
- * making it suitable for single-instance deployments.
- * </p>
- *
- * <p>
- * For horizontally scaled production environments, a distributed storage
- * mechanism such as Redis should be used to maintain consistent OTP state
- * and rate limits across application instances.
+ * For horizontally scaled production environments, move this state to a distributed store such as Redis
+ * (and Bucket4j's Redis integration for rate limits) so every instance sees the same data.
  * </p>
  *
  * @author 𝐏𝐄𝐓𝐄𝐑 𝐍𝐖𝐀𝐎𝐆𝐔
