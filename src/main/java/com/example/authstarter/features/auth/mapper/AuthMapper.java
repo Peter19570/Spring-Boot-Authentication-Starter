@@ -17,23 +17,32 @@ public interface AuthMapper {
     @Mapping(target = "lastName", source = "names.lastName")
     User toEntityFromAuthRequest(RegisterRequest request, NameParts names);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "email", expression = "java(payload.getEmail())")
-    @Mapping(target = "firstName", expression = "java(claim(payload, \"given_name\"))")
-    @Mapping(target = "lastName", expression = "java(claim(payload, \"family_name\"))")
-    @Mapping(target = "picture", expression = "java(claim(payload, \"picture\"))")
-    @Mapping(target = "provider", constant = "GOOGLE")
-    @Mapping(target = "emailVerified", constant = "true")
-    User toEntityFromGooglePayload(GoogleIdToken.Payload payload);
+    // Google's payload is a raw Map, which MapStruct can't introspect, so these two are written by hand.
+    default User toEntityFromGooglePayload(GoogleIdToken.Payload payload) {
+        User user = new User();
+        user.setEmail(payload.getEmail());
+        user.setFirstName(claim(payload, "given_name"));
+        user.setLastName(claim(payload, "family_name"));
+        user.setPicture(claim(payload, "picture"));
+        user.setProvider("GOOGLE");
+        user.setEmailVerified(true);
+        return user;
+    }
 
-    // Same field mappings as above, but never touches the provider (AuthHelper.resolveAuthProviders owns that)
-    @InheritConfiguration(name = "toEntityFromGooglePayload")
-    @Mapping(target = "provider", ignore = true)
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateEntityFromGooglePayload(GoogleIdToken.Payload payload, @MappingTarget User user);
+    // Only overwrites a field when Google actually sent that claim; never touches the provider
+    default void updateEntityFromGooglePayload(GoogleIdToken.Payload payload, User user) {
+        String firstName = claim(payload, "given_name");
+        String lastName = claim(payload, "family_name");
+        String picture = claim(payload, "picture");
+
+        if (firstName != null) user.setFirstName(firstName);
+        if (lastName != null) user.setLastName(lastName);
+        if (picture != null) user.setPicture(picture);
+        user.setEmailVerified(true);
+    }
 
     // Google omits claims for some accounts (e.g. no family name); a missing claim must not crash login
-    default String claim(GoogleIdToken.Payload payload, String name) {
+    private static String claim(GoogleIdToken.Payload payload, String name) {
         Object value = payload.get(name);
         return value != null ? value.toString() : null;
     }

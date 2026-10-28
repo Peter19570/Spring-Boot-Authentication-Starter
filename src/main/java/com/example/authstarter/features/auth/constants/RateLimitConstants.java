@@ -1,7 +1,6 @@
 package com.example.authstarter.features.auth.constants;
 
 import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Refill;
 
 import java.time.Duration;
 import java.util.Map;
@@ -28,6 +27,9 @@ public final class RateLimitConstants {
     );
 
     private static Bandwidth limit(long capacity, Duration period) {
-        return Bandwidth.classic(capacity, Refill.greedy(capacity, period));
+        return Bandwidth.builder()
+                .capacity(capacity)
+                .refillGreedy(capacity, period)
+                .build();
     }
 }

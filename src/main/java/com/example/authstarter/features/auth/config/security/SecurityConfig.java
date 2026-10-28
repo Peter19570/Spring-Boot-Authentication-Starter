@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(SWAGGER_URLS).permitAll()
                         .requestMatchers(ACTUATOR_URLS).permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN") // metrics, caches...: no role exists yet, so closed
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFilter, JwtFilter.class)
