@@ -4,6 +4,8 @@ import com.example.authstarter.features.auth.dto.internal.Verification;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bucket;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialCreationOptions;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialRequestOptions;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -51,6 +53,22 @@ public class CacheConfig {
 
     @Bean
     public Cache<String, String> otpStore() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(5))
+                .maximumSize(10_000)
+                .build();
+    }
+
+    @Bean
+    public Cache<String, PublicKeyCredentialCreationOptions> creationOptionsStore() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofMinutes(5))
+                .maximumSize(10_000)
+                .build();
+    }
+
+    @Bean
+    public Cache<String, PublicKeyCredentialRequestOptions> requestOptionsStore() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(5))
                 .maximumSize(10_000)

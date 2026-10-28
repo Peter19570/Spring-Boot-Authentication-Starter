@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.Locale;
+
 public record AuthRequest(
         @NotBlank(message = "Email is required")
         @Email(message = "Invalid email address")
@@ -15,4 +17,7 @@ public record AuthRequest(
         @Size(min = 6, max = 128, message = "Password must be between 8 and 128 characters")
         String password
 ) {
+    public AuthRequest {
+        email = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
 }

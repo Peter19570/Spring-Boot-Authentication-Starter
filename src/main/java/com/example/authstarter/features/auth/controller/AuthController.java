@@ -10,8 +10,6 @@ import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -137,43 +135,35 @@ public class AuthController {
     @PostMapping("/passkeys/initialize")
     @Operation(summary = "Initialize passkey registration.")
     public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> startPasskeyRegistration(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        PasskeyOptionsResponse response = authService.startPasskeyRegistration(
-                servletRequest, servletResponse);
+        PasskeyOptionsResponse response = authService.startPasskeyRegistration(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Passkey Registration Initiated", response));
     }
 
     @PostMapping("/passkeys/register")
     @Operation(summary = "Complete passkey registration.")
-    public ResponseEntity<ApiResponse<CredentialRecord>> finishPasskeyRegistration(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
-            @RequestBody PasskeyRegistrationRequest request,
+    public ResponseEntity<ApiResponse<PasskeyResponse>> finishPasskeyRegistration(
+            @Valid @RequestBody PasskeyRegistrationRequest request,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        CredentialRecord response = authService.finishPasskeyRegistration(
-                servletRequest, servletResponse, request, principal.id());
+        PasskeyResponse response = authService.finishPasskeyRegistration(request, principal.id());
         return ResponseEntity.ok(ApiResponse.success("Public Key Saved", response));
     }
 
     @PostMapping("/passkeys/challenge")
     @Operation(summary = "Generate passkey authentication challenge.")
-    public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse
-    ) {
-        PublicKeyCredentialRequestOptions response = authService.startPasskeyAuthentication(
-                servletRequest, servletResponse);
+    public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication() {
+        PublicKeyCredentialRequestOptions response = authService.startPasskeyAuthentication();
         return ResponseEntity.ok(ApiResponse.success("Passkey Challenge Sent Successfully", response));
     }
 
     @PostMapping("/passkeys/login")
     @Operation(summary = "Verify a passkey authentication challenge.")
     public ResponseEntity<ApiResponse<AuthResponse>> finishPasskeyAuthentication(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
-            @RequestBody PasskeyLoginRequest request
+            @Valid @RequestBody PasskeyLoginRequest request
     ) {
-        AuthResponse response = authService.finishPasskeyAuthentication(
-                servletRequest, servletResponse, request);
+        AuthResponse response = authService.finishPasskeyAuthentication(request);
         return ResponseEntity.ok(ApiResponse.success("Passkey Login Success", response));
     }
 

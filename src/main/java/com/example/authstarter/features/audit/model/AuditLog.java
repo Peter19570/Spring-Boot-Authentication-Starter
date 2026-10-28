@@ -16,7 +16,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "audit_logs")
+@Table(name = "audit_logs", indexes = {
+        @Index(name = "idx_audit_logs_user_id", columnList = "user_id"),
+        @Index(name = "idx_audit_logs_created_at", columnList = "created_at")
+})
 public class AuditLog extends BaseEntity {
 
     @Column(nullable = false)

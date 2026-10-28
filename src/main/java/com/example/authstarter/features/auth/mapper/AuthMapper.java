@@ -19,18 +19,22 @@ public interface AuthMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", expression = "java(payload.getEmail())")
-    @Mapping(target = "firstName", expression = "java(payload.get(\"given_name\").toString())")
-    @Mapping(target = "lastName", expression = "java(payload.get(\"family_name\").toString())")
-    @Mapping(target = "picture", expression = "java(payload.get(\"picture\").toString())")
-    @Mapping(target = "provider", expression = "java(\"GOOGLE\")")
+    @Mapping(target = "firstName", expression = "java(claim(payload, \"given_name\"))")
+    @Mapping(target = "lastName", expression = "java(claim(payload, \"family_name\"))")
+    @Mapping(target = "picture", expression = "java(claim(payload, \"picture\"))")
+    @Mapping(target = "provider", constant = "GOOGLE")
+    @Mapping(target = "emailVerified", constant = "true")
     User toEntityFromGooglePayload(GoogleIdToken.Payload payload);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "email", expression = "java(payload.getEmail())")
-    @Mapping(target = "firstName", expression = "java(payload.get(\"given_name\").toString())")
-    @Mapping(target = "lastName", expression = "java(payload.get(\"family_name\").toString())")
-    @Mapping(target = "picture", expression = "java(payload.get(\"picture\").toString())")
-    @Mapping(target = "emailVerified", constant = "true")
+    // Same field mappings as above, but never touches the provider (AuthHelper.resolveAuthProviders owns that)
+    @InheritConfiguration(name = "toEntityFromGooglePayload")
+    @Mapping(target = "provider", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromGooglePayload(GoogleIdToken.Payload payload, @MappingTarget User user);
+
+    // Google omits claims for some accounts (e.g. no family name); a missing claim must not crash login
+    default String claim(GoogleIdToken.Payload payload, String name) {
+        Object value = payload.get(name);
+        return value != null ? value.toString() : null;
+    }
 }

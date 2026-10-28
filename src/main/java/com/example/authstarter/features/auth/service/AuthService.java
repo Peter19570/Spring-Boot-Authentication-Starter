@@ -23,21 +23,18 @@ import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.memory.EVTService;
 import com.example.authstarter.features.auth.service.memory.PRTService;
+import com.example.authstarter.features.auth.service.memory.PasskeyOptionsService;
 import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.webauthn.api.*;
-import org.springframework.security.web.webauthn.authentication.PublicKeyCredentialRequestOptionsRepository;
 import org.springframework.security.web.webauthn.management.*;
-import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,10 +67,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final PasskeyOptionsService passkeyOptionsService;
     private final WebAuthnRelyingPartyOperations relyingPartyOperations;
-    private final PublicKeyCredentialRequestOptionsRepository requestOptionsRepository;
-    private final PublicKeyCredentialCreationOptionsRepository creationOptionsRepository;
-
 
     /**
      * MAJOR AUTHENTICATION METHODS HERE
@@ -173,8 +168,7 @@ public class AuthService {
      * PASSKEY AUTHENTICATION METHODS HERE
      */
 
-    public PasskeyOptionsResponse startPasskeyRegistration(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+    public PasskeyOptionsResponse startPasskeyRegistration(UUID userId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -184,7 +178,7 @@ public class AuthService {
             PublicKeyCredentialCreationOptions options =
                     relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
 
-            creationOptionsRepository.save(servletRequest, servletResponse, options);
+            passkeyOptionsService.saveRegistration(userId, options);
             return PasskeyOptionsResponse.toResponse(options);
         }
 
@@ -192,11 +186,9 @@ public class AuthService {
 
     }
 
-    public CredentialRecord finishPasskeyRegistration(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
-            PasskeyRegistrationRequest request, UUID userId) {
+    public PasskeyResponse finishPasskeyRegistration(PasskeyRegistrationRequest request, UUID userId) {
 
-        PublicKeyCredentialCreationOptions options = creationOptionsRepository.load(servletRequest);
+        PublicKeyCredentialCreationOptions options = passkeyOptionsService.takeRegistration(userId);
         RelyingPartyPublicKey publicKey = new RelyingPartyPublicKey(request.credential(), request.label());
 
         if (options != null){
@@ -212,30 +204,29 @@ public class AuthService {
                     AuditRequest.log(existingUser, PASSKEY_LINK,
                             "Passkey linked successfully", getClientInfo(), Map.of()));
 
-            creationOptionsRepository.save(servletRequest, servletResponse, null);
-            return record;
+            Passkey saved = passkeyRepo.findByCredentialId(record.getCredentialId().toBase64UrlString())
+                    .orElseThrow(() -> new NotFoundException("Passkey not found"));
+
+            return passkeyMapper.toDto(saved);
         }
 
         throw new ValidationException("Registration session missing or expired");
     }
 
-    public PublicKeyCredentialRequestOptions startPasskeyAuthentication(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+    public PublicKeyCredentialRequestOptions startPasskeyAuthentication() {
 
         var optionsRequest = new ImmutablePublicKeyCredentialRequestOptionsRequest(null);
 
         PublicKeyCredentialRequestOptions options =
                 relyingPartyOperations.createCredentialRequestOptions(optionsRequest);
 
-        requestOptionsRepository.save(servletRequest, servletResponse, options);
+        passkeyOptionsService.saveAuthentication(options);
         return options;
     }
 
-    public AuthResponse finishPasskeyAuthentication(
-            HttpServletRequest servletRequest, HttpServletResponse servletResponse,
-            PasskeyLoginRequest request) {
+    public AuthResponse finishPasskeyAuthentication(PasskeyLoginRequest request) {
 
-        PublicKeyCredentialRequestOptions options = requestOptionsRepository.load(servletRequest);
+        PublicKeyCredentialRequestOptions options = passkeyOptionsService.takeAuthentication(request.credential());
 
         if (options != null){
             var authenticationRequest = new RelyingPartyAuthenticationRequest(options, request.credential());
@@ -248,7 +239,6 @@ public class AuthService {
             authHelper.resetAccountLock(user);
             authHelper.cacheUser(user);
 
-            requestOptionsRepository.save(servletRequest, servletResponse, null);
             return authHelper.createAuthResponse(user, PASSKEY_LOGIN);
         }
 
@@ -301,11 +291,15 @@ public class AuthService {
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
-        User user = authHelper.getUser(userId);
+        User user = authHelper.getUserFromDatabase(userId);
         String newEmail = request.newEmail();
 
         if (user.getPassword() == null) {
             throw new ValidationException("Set a password before changing your email");
+        }
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new AuthenticationException("Current password is incorrect");
         }
 
         authHelper.validateEmailNotRegistered(newEmail);

@@ -16,6 +16,8 @@ import java.util.UUID;
 )
 public interface PasskeyMapper {
 
+    PasskeyResponse toDto(Passkey passkey);
+
     List<PasskeyResponse> toDto(List<Passkey> passkey);
 
     // signatureCount, label, lastUsed, uvInitialized, backupEligible and backupState map automatically by name

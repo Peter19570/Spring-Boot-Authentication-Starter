@@ -30,16 +30,25 @@ public record PasskeyOptionsResponse(
             String userVerification
     ) {}
 
-    public static PasskeyOptionsResponse toResponse(PublicKeyCredentialCreationOptions options){
-        assert options.getTimeout() != null;
-        assert options.getAuthenticatorSelection().getResidentKey() != null;
-        assert options.getAuthenticatorSelection().getUserVerification() != null;
-        assert options.getAttestation() != null;
+    public static PasskeyOptionsResponse toResponse(PublicKeyCredentialCreationOptions options) {
+        var selection = options.getAuthenticatorSelection();
+        var attachment = selection != null ? selection.getAuthenticatorAttachment() : null;
+        var residentKey = selection != null ? selection.getResidentKey() : null;
+        var userVerification = selection != null ? selection.getUserVerification() : null;
+
+        List<CredentialDescriptorDto> excluded = options.getExcludeCredentials() == null
+                ? List.of()
+                : options.getExcludeCredentials().stream()
+                        .map(c -> new CredentialDescriptorDto(
+                                c.getId().toBase64UrlString(),
+                                c.getType().getValue(),
+                                c.getTransports() == null
+                                        ? List.of()
+                                        : c.getTransports().stream().map(AuthenticatorTransport::getValue).toList()))
+                        .toList();
+
         return new PasskeyOptionsResponse(
-                new PasskeyOptionsResponse.RpDto(
-                        options.getRp().getId(),
-                        options.getRp().getName()
-                ),
+                new RpDto(options.getRp().getId(), options.getRp().getName()),
 
                 new UserDto(
                         options.getUser().getId().toBase64UrlString(),
@@ -48,29 +57,23 @@ public record PasskeyOptionsResponse(
                 ),
 
                 options.getChallenge().toBase64UrlString(),
+
                 options.getPubKeyCredParams().stream()
-                        .map(p -> new PasskeyOptionsResponse.PubKeyCredParamDto(
-                                p.getType().getValue(), p.getAlg().getValue()))
+                        .map(p -> new PubKeyCredParamDto(p.getType().getValue(), p.getAlg().getValue()))
                         .toList(),
-                options.getTimeout().toMillis(),
-                options.getExcludeCredentials().stream()
-                        .map(c -> {
-                            assert c.getId() != null;
-                            assert c.getTransports() != null;
-                            return new CredentialDescriptorDto(
-                                    c.getId().toBase64UrlString(),
-                                    c.getType().getValue(),
-                                    c.getTransports().stream().map(AuthenticatorTransport::getValue).toList());
-                        })
-                        .toList(),
-                new PasskeyOptionsResponse.AuthenticatorSelectionDto(
-                        options.getAuthenticatorSelection().getAuthenticatorAttachment() != null
-                                ? options.getAuthenticatorSelection().getAuthenticatorAttachment().getValue() : null,
-                        options.getAuthenticatorSelection().getResidentKey().getValue(),
-                        options.getAuthenticatorSelection().getResidentKey().getValue().equals("required"),
-                        options.getAuthenticatorSelection().getUserVerification().getValue()
+
+                options.getTimeout() != null ? options.getTimeout().toMillis() : null,
+
+                excluded,
+
+                new AuthenticatorSelectionDto(
+                        attachment != null ? attachment.getValue() : null,
+                        residentKey != null ? residentKey.getValue() : null,
+                        residentKey != null && "required".equals(residentKey.getValue()),
+                        userVerification != null ? userVerification.getValue() : null
                 ),
-                options.getAttestation().getValue()
+
+                options.getAttestation() != null ? options.getAttestation().getValue() : null
         );
     }
 }

@@ -20,7 +20,7 @@ public class BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(nullable = false, updatable = false, unique = true)
+    @Column(nullable = false, updatable = false)
     private UUID id;
 
     @CreatedDate

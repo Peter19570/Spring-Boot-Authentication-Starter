@@ -6,7 +6,6 @@ import com.example.authstarter.features.audit.mapper.AuditMapper;
 import com.example.authstarter.features.audit.model.AuditLog;
 import com.example.authstarter.features.audit.repo.AuditRepo;
 import com.example.authstarter.features.shared.dto.PageResponse;
-import com.example.authstarter.features.user.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
@@ -29,9 +28,9 @@ public class AuditService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createAuditLog(AuditRequest request) {
         AuditLog audit = AuditLog.builder()
-                .userId(request.user().getId())
-                .email(request.user().getEmail())
-                .fullName(getUserFullName(request.user()))
+                .userId(request.userId())
+                .email(request.email())
+                .fullName(request.fullName())
                 .description(request.description())
                 .ipAddress(request.ipAddress())
                 .userAgent(request.userAgent())
@@ -47,8 +46,4 @@ public class AuditService {
         return PageResponse.from(responses.map(auditMapper::toDto));
     }
 
-    private String getUserFullName(User user){
-        String name = user.displayName();
-        return name != null ? name : "Unknown";
-    }
 }
