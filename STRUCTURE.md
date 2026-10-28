@@ -38,6 +38,7 @@ example/
     │   │   │   ├── ratelimit
     │   │   │   │   └── RateLimitFilter.java
     │   │   │   ├── security
+    │   │   │   │   ├── RestSecurityHandlers.java
     │   │   │   │   └── SecurityConfig.java
     │   │   │   └── userservice
     │   │   │       └── CustomUserDetailsService.java
@@ -63,6 +64,7 @@ example/
     │   │   │   │   ├── PasskeyLoginRequest.java
     │   │   │   │   ├── PasskeyRegistrationRequest.java
     │   │   │   │   ├── RefreshTokenRequest.java
+    │   │   │   │   ├── RegisterRequest.java
     │   │   │   │   └── ResetPasswordRequest.java
     │   │   │   └── response
     │   │   │       ├── AuthResponse.java
@@ -80,10 +82,12 @@ example/
     │   │   │   └── RefreshTokenRepo.java
     │   │   └── service
     │   │       ├── helpers
-    │   │       │   └── AuthHelper.java
+    │   │       │   ├── AuthHelper.java
+    │   │       │   └── TokenCleanupJob.java
     │   │       ├── memory
     │   │       │   ├── EVTService.java
     │   │       │   ├── OTPService.java
+    │   │       │   ├── PasskeyOptionsService.java
     │   │       │   └── PRTService.java
     │   │       ├── notification
     │   │       │   └── EmailService.java
