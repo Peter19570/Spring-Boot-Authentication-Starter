@@ -90,7 +90,7 @@ public class AuthController {
     public ResponseEntity<Void> verifyEmail(
             @RequestParam
             @NotBlank(message = "Token is required")
-            @Size(min = 36, max = 36, message = "Token must be exactly 36 characters")
+            @Size(min = 43, max = 43, message = "Token must be exactly 43 characters")
             String token
     ) {
         authService.verifyEmail(token);
@@ -121,7 +121,7 @@ public class AuthController {
     public ResponseEntity<Void> confirmChange(
             @RequestParam
             @NotBlank(message = "Token is required")
-            @Size(min = 36, max = 36, message = "Token must be exactly 36 characters")
+            @Size(min = 43, max = 43, message = "Token must be exactly 43 characters")
             String token
     ) {
         authService.confirmEmailChange(token);
