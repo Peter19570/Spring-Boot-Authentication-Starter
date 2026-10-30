@@ -213,7 +213,7 @@ public class AuthHelper {
     public void resolveAuthProviders(User user, String targetProvider){
         if (user.getProvider() == null) {
             user.setProvider(targetProvider);
-        } else if (!user.hasProvider(targetProvider)) {
+        } else if (user.hasProvider(targetProvider)) {
             user.setProvider(user.getProvider() + "," + targetProvider);
         }
     }

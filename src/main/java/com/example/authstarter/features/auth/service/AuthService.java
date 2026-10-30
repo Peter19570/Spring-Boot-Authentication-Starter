@@ -347,7 +347,7 @@ public class AuthService {
         // Always return silently so this endpoint can't be used to discover which emails exist.
         userRepo.findByEmailAndDeletedAtIsNull(request.email()).ifPresent(user -> {
             boolean hasNoPassword = user.getPassword() == null;
-            boolean isNotGoogleUser = !user.hasProvider("GOOGLE");
+            boolean isNotGoogleUser = user.hasProvider("GOOGLE");
 
             if (hasNoPassword && isNotGoogleUser) {
                 emailService.sendSocialLoginReminder(user, user.getProvider());

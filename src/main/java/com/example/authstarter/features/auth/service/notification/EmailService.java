@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.example.authstarter.features.auth.constants.AsyncConstants.EMAIL_EXECUTOR;
+import static com.example.authstarter.features.shared.constants.AsyncConstants.EMAIL_EXECUTOR;
 
 @Service
 @RequiredArgsConstructor

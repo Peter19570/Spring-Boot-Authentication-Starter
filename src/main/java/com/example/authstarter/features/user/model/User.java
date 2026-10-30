@@ -42,7 +42,7 @@ public class User extends BaseEntity {
 
     /** The provider column holds a comma-separated list (e.g. "GOOGLE,PASSKEY"). */
     public boolean hasProvider(String name) {
-        return provider != null && Arrays.asList(provider.split(",")).contains(name);
+        return provider == null || !Arrays.asList(provider.split(",")).contains(name);
     }
 
     /** Full name, or null when no real name is set. */

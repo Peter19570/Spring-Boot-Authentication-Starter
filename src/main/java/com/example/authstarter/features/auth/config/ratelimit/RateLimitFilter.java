@@ -44,7 +44,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String clientId = getClientIdentifier(request);
         String bucketKey = matchedEndpoint + ":" + clientId;
 
-        Bucket bucket = bucketStore.get(bucketKey, k -> createBucketFor(matchedEndpoint));
+        Bucket bucket = bucketStore.get(bucketKey, _ -> createBucketFor(matchedEndpoint));
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
         if (probe.isConsumed()) {

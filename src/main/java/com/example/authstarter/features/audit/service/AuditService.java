@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-import static com.example.authstarter.features.auth.constants.AsyncConstants.AUDIT_EXECUTOR;
+import static com.example.authstarter.features.shared.constants.AsyncConstants.AUDIT_EXECUTOR;
 
 @Service
 @RequiredArgsConstructor
