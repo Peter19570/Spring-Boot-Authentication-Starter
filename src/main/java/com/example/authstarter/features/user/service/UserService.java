@@ -2,6 +2,7 @@ package com.example.authstarter.features.user.service;
 
 import com.example.authstarter.features.audit.dto.AuditRequest;
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
+import com.example.authstarter.features.auth.dto.request.PasswordSetupRequest;
 import com.example.authstarter.features.auth.repo.PasskeyRepo;
 import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
@@ -72,6 +73,16 @@ public class UserService {
         passkeyRepo.deleteAllByUserId(currentUser.getId());
 
         eventPublisher.publishEvent(AuditRequest.log(currentUser, ACCOUNT_SOFT_DELETED,
-                "User account has been soft deleted", getClientInfo(), Map.of()));
+                "User account has been soft deleted", Map.of()));
+    }
+
+    public void setupPassword(PasswordSetupRequest passwordSetupRequest, UUID userId){
+        User user = authHelper.getUserFromDatabase(userId);
+
+        if (user.getPassword() != null){
+            throw new ValidationException("Password has been setup for this account already");
+        }
+
+        user.setPassword(passwordEncoder.encode(passwordSetupRequest.password()));
     }
 }

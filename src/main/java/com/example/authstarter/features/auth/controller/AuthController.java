@@ -159,7 +159,7 @@ public class AuthController {
     }
 
     @PostMapping("/passkeys/login")
-    @Operation(summary = "Verify a passkey authentication challenge.")
+    @Operation(summary = "Complete passkey authentication challenge.")
     public ResponseEntity<ApiResponse<AuthResponse>> finishPasskeyAuthentication(
             @Valid @RequestBody PasskeyLoginRequest request
     ) {

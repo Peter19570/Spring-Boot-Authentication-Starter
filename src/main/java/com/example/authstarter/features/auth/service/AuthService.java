@@ -137,8 +137,7 @@ public class AuthService {
                         .ifPresent(t -> {
                             refreshTokenRepo.deleteAllByUserId(user.getId());
                             eventPublisher.publishEvent(AuditRequest.log(user, TOKEN_REUSE_DETECTED,
-                                    "Refresh token reuse detected; all sessions revoked",
-                                    getClientInfo(), Map.of()));
+                                    "Refresh token reuse detected; all sessions revoked"));
                         });
 
                 throw new AuthenticationException("Refresh token is invalid or expired");
@@ -153,10 +152,9 @@ public class AuthService {
         refreshTokenRepo.findByTokenHash(hashToken(request.refreshToken())).ifPresent(token -> {
             User user = authHelper.getUserFromDatabase(token.getUser().getId());
             refreshTokenRepo.delete(token);
-            authHelper.updateCache(user);
+            authHelper.updateCachedUser(user);
 
-            eventPublisher.publishEvent(AuditRequest.log(
-                    user, LOGOUT, "User logout success", getClientInfo(), Map.of()));
+            eventPublisher.publishEvent(AuditRequest.log(user, LOGOUT, "User logout success"));
         });
     }
 
@@ -203,11 +201,10 @@ public class AuthService {
 
             User existingUser = authHelper.getUserFromDatabase(userId);
             authHelper.resolveAuthProviders(existingUser, "PASSKEY");
-            authHelper.updateCache(existingUser);
+            authHelper.updateCachedUser(existingUser);
 
-            eventPublisher.publishEvent(
-                    AuditRequest.log(existingUser, PASSKEY_LINK,
-                            "Passkey linked successfully", getClientInfo(), Map.of()));
+            eventPublisher.publishEvent(AuditRequest.log(existingUser, PASSKEY_LINK,
+                    "Passkey linked successfully"));
 
             Passkey saved = passkeyRepo.findByCredentialId(record.getCredentialId().toBase64UrlString())
                     .orElseThrow(() -> new NotFoundException("Passkey not found"));
@@ -263,8 +260,7 @@ public class AuthService {
         }
 
         eventPublisher.publishEvent(AuditRequest.log(
-                authHelper.getUserFromDatabase(userId), PASSKEY_UNLINK,
-                "Passkey removed", getClientInfo(), Map.of()));
+                authHelper.getUserFromDatabase(userId), PASSKEY_UNLINK, "Passkey removed"));
     }
 
     /**
@@ -292,10 +288,10 @@ public class AuthService {
         User user = authHelper.getUserFromDatabase(UUID.fromString(verification.userId()));
         user.setEmailVerified(true);
 
-        authHelper.updateCache(user);
+        authHelper.updateCachedUser(user);
 
         eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_VERIFIED,
-                "Email verified successfully", getClientInfo(), Map.of()));
+                "Email verified successfully"));
     }
 
     public void requestEmailChange(UUID userId, EmailChangeRequest request) {
@@ -332,11 +328,10 @@ public class AuthService {
 
         user.setEmail(newEmail);
         user.setEmailVerified(true);
-        authHelper.updateCache(user);
+        authHelper.updateCachedUser(user);
 
-        eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_CHANGED,
-                "User has changed email", getClientInfo(), Map.of(
-                        "old email", oldEmail, "new email", newEmail)));
+        eventPublisher.publishEvent(AuditRequest.log(user, EMAIL_CHANGED, "User has changed email",
+                Map.of("old email", oldEmail, "new email", newEmail)));
     }
 
     /**
@@ -370,7 +365,7 @@ public class AuthService {
         user.setLockedUntil(null);
 
         eventPublisher.publishEvent(AuditRequest.log(user, PASSWORD_RESET,
-                "User reset password successfully", getClientInfo(), Map.of()));
+                "User reset password successfully"));
     }
 
 }

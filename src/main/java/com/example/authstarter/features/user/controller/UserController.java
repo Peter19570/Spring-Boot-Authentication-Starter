@@ -1,6 +1,7 @@
 package com.example.authstarter.features.user.controller;
 
 import com.example.authstarter.features.auth.dto.request.AccountDeletionRequest;
+import com.example.authstarter.features.auth.dto.request.PasswordSetupRequest;
 import com.example.authstarter.features.shared.dto.ApiResponse;
 import com.example.authstarter.features.shared.dto.UserPrincipal;
 import com.example.authstarter.features.user.dto.response.UserDetailedResponse;
@@ -46,6 +47,16 @@ public class UserController {
             @Valid @RequestBody AccountDeletionRequest request
     ) {
         userService.confirmSoftDelete(principal.id(), request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/me/setup-password")
+    @Operation(summary = "Set up initial password for a user account.")
+    public ResponseEntity<Void> setupPassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody PasswordSetupRequest request
+    ) {
+        userService.setupPassword(request, principal.id());
         return ResponseEntity.noContent().build();
     }
 }

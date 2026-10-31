@@ -20,7 +20,7 @@ public interface RefreshTokenRepo extends JpaRepository<RefreshToken, UUID> {
 
     @Modifying
     @Query("delete from RefreshToken rt where rt.expiresAt < :now")
-    int deleteExpired(@Param("now") Instant now);
+    void deleteExpired(@Param("now") Instant now);
 
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

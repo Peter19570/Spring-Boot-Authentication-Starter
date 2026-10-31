@@ -72,7 +72,7 @@ public class AuthHelper {
         if (cache != null) cache.put(user.getId(), user);
     }
 
-    public void updateCache(User user){
+    public void updateCachedUser(User user){
         Cache cache = cacheManager.getCache(USERS);
         if (cache != null){
             cache.evict(user.getId());
@@ -115,9 +115,8 @@ public class AuthHelper {
             resolveAuthProviders(newUser, "GOOGLE");
             User saved = userRepo.save(newUser);
 
-            eventPublisher.publishEvent(AuditRequest.log(
-                    saved, REGISTER,
-                    "User created account with Google login", getClientInfo(), Map.of()));
+            eventPublisher.publishEvent(AuditRequest.log(saved, REGISTER,
+                    "User created account with Google login"));
 
             return saved;
         }
@@ -131,9 +130,8 @@ public class AuthHelper {
         if (NOT_SET.equals(user.getFirstName()) || NOT_SET.equals(user.getLastName())) {
             authMapper.updateEntityFromGooglePayload(payload, user);
 
-            eventPublisher.publishEvent(AuditRequest.log(
-                    user, SOCIAL_LINK,
-                    "Google account linked successfully", getClientInfo(), Map.of()));
+            eventPublisher.publishEvent(AuditRequest.log(user, SOCIAL_LINK,
+                    "Google account linked successfully"));
         }
 
         resolveAuthProviders(user, "GOOGLE");
@@ -162,8 +160,8 @@ public class AuthHelper {
     }
 
     public AuthResponse createAuthResponse(User user, AuditAction auditAction){
-        eventPublisher.publishEvent(AuditRequest.log(
-                user, auditAction, "Authentication successful: " + auditAction.name(), getClientInfo(), Map.of()));
+        eventPublisher.publishEvent(AuditRequest.log(user, auditAction,
+                "Authentication successful: " + auditAction.name()));
 
         return new AuthResponse(true, createTokenResponse(user), userMapper.toDto(user));
     }
@@ -206,7 +204,7 @@ public class AuthHelper {
         }
 
         eventPublisher.publishEvent(AuditRequest.log(fresh, LOGIN_ATTEMPT,
-                "User attempted login with incorrect password", getClientInfo(),
+                "User attempted login with incorrect password", 
                 Map.of("message", "Failed login attempts: " + newAttempts)));
     }
 
@@ -227,7 +225,7 @@ public class AuthHelper {
 
             } else {
                 eventPublisher.publishEvent(AuditRequest.log(
-                        user, LOGIN_FAILURE, "Login failed", getClientInfo(),
+                        user, LOGIN_FAILURE, "Login failed", 
                             Map.of("message", "User account locked temporarily")));
 
                 throw new AuthenticationException("Account is temporarily locked. Try again later.");

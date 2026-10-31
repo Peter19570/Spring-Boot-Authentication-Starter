@@ -22,8 +22,6 @@ example/
     │   │       └── AuditService.java
     │   ├── auth
     │   │   ├── config
-    │   │   │   ├── async
-    │   │   │   │   └── AsyncConfig.java
     │   │   │   ├── cors
     │   │   │   │   └── CorsConfig.java
     │   │   │   ├── jwt
@@ -43,7 +41,6 @@ example/
     │   │   │   └── userservice
     │   │   │       └── CustomUserDetailsService.java
     │   │   ├── constants
-    │   │   │   ├── AsyncConstants.java
     │   │   │   ├── CorsConstants.java
     │   │   │   ├── JwtConstants.java
     │   │   │   ├── RateLimitConstants.java
@@ -63,6 +60,7 @@ example/
     │   │   │   │   ├── GoogleRequest.java
     │   │   │   │   ├── PasskeyLoginRequest.java
     │   │   │   │   ├── PasskeyRegistrationRequest.java
+    │   │   │   │   ├── PasswordSetupRequest.java
     │   │   │   │   ├── RefreshTokenRequest.java
     │   │   │   │   ├── RegisterRequest.java
     │   │   │   │   └── ResetPasswordRequest.java
@@ -96,11 +94,14 @@ example/
     │   │   ├── config
     │   │   │   ├── app
     │   │   │   │   └── AppConfig.java
+    │   │   │   ├── async
+    │   │   │   │   └── AsyncConfig.java
     │   │   │   ├── cache
     │   │   │   │   └── CacheConfig.java
     │   │   │   └── swagger
     │   │   │       └── SwaggerConfig.java
     │   │   ├── constants
+    │   │   │   ├── AsyncConstants.java
     │   │   │   ├── CacheConstants.java
     │   │   │   ├── ClientConstants.java
     │   │   │   └── PageConstants.java
@@ -120,7 +121,8 @@ example/
     │   │   ├── model
     │   │   │   └── BaseEntity.java
     │   │   └── utils
-    │   │       └── ClientInfoUtils.java
+    │   │       ├── ClientInfoUtils.java
+    │   │       └── TokenUtils.java
     │   └── user
     │       ├── controller
     │       │   └── UserController.java
