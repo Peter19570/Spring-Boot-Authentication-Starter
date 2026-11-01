@@ -109,7 +109,7 @@ public class AuthService {
         return authHelper.createAuthResponse(user, LOCAL_LOGIN);
     }
 
-    @Transactional(noRollbackFor = AuthenticationException.class) // the theft response below must be committed
+    @Transactional(noRollbackFor = AuthenticationException.class)
     public TokenResponse refresh(RefreshTokenRequest request) {
         String token = request.refreshToken();
         JwtClaims jwtClaims = jwtService.extractToken(token);
@@ -233,7 +233,13 @@ public class AuthService {
         if (options != null){
             var authenticationRequest = new RelyingPartyAuthenticationRequest(options, request.credential());
 
-            PublicKeyCredentialUserEntity userEntity = relyingPartyOperations.authenticate(authenticationRequest);
+            PublicKeyCredentialUserEntity userEntity;
+            try {
+                userEntity = relyingPartyOperations.authenticate(authenticationRequest);
+            } catch (IllegalArgumentException e) {
+                // Thrown when the credential id isn't in our store (e.g. a stale passkey left on the user's device)
+                throw new AuthenticationException("Passkey not recognized");
+            }
             UUID userId = UUID.fromString(new String(userEntity.getId().getBytes(), StandardCharsets.UTF_8));
 
             User user = authHelper.getUserFromDatabase(userId);
