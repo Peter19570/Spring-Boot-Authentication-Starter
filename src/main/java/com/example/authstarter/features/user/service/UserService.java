@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.ACCOUNT_SOFT_DELETED;
+import static com.example.authstarter.features.audit.enums.AuditAction.PASSWORD_RESET;
 import static com.example.authstarter.features.shared.constants.CacheConstants.*;
 import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
@@ -54,7 +55,7 @@ public class UserService {
     }
 
     @CacheEvict(cacheNames = USERS, key = "#userId")
-    public void confirmSoftDelete(UUID userId, AccountDeletionRequest request) {
+    public void confirmDeletion(UUID userId, AccountDeletionRequest request) {
         User currentUser = authHelper.getUserFromDatabase(userId);
 
         // The emailed, attempt-limited code is checked first: someone holding only a stolen access token
@@ -76,13 +77,34 @@ public class UserService {
                 "User account has been soft deleted", Map.of()));
     }
 
+    public void initiatePasswordSetup(UUID userId) {
+        User user = authHelper.getUserFromDatabase(userId);
+        requireNoPassword(user);
+
+        String code = otpService.generateOtp(PASSWORD_SETUP_OTP + userId);
+        emailService.sendPasswordSetupCode(user, code);
+    }
+
+    @CacheEvict(cacheNames = USERS, key = "#userId")
     public void setupPassword(PasswordSetupRequest passwordSetupRequest, UUID userId){
         User user = authHelper.getUserFromDatabase(userId);
+        requireNoPassword(user);
 
-        if (user.getPassword() != null){
-            throw new ValidationException("Password has been setup for this account already");
-        }
+        // The emailed code proves whoever holds this session also controls the inbox,
+        // so a stolen access token alone can't add a login credential.
+        otpService.validateOtp(PASSWORD_SETUP_OTP + userId,
+                passwordSetupRequest.otp().replaceAll("\\s+", ""));
 
         user.setPassword(passwordEncoder.encode(passwordSetupRequest.password()));
+        authHelper.resolveAuthProviders(user, "LOCAL");
+
+        eventPublisher.publishEvent(AuditRequest.log(user, PASSWORD_RESET,
+                "Password set up for an account that had none"));
+    }
+
+    private void requireNoPassword(User user) {
+        if (user.getPassword() != null) {
+            throw new ValidationException("Password has been setup for this account already");
+        }
     }
 }

@@ -10,6 +10,7 @@ public interface UserMapper {
 
     UserResponse toDto(User user);
 
+    @Mapping(target = "hasPassword", expression = "java(user.getPassword() != null)")
     UserDetailedResponse toDetailedDto(User user);
 
 }

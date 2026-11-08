@@ -15,7 +15,9 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class PasskeyOptionsService { // Passkey challenges, kept in memory instead of HttpSession
+public class POService { // Passkey Options
+
+    // Passkey challenges, kept in memory instead of HttpSession
 
     private final Cache<String, PublicKeyCredentialCreationOptions> creationOptionsStore;
     private final Cache<String, PublicKeyCredentialRequestOptions> requestOptionsStore;

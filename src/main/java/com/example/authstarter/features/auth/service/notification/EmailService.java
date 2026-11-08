@@ -77,6 +77,13 @@ public class EmailService {
     }
 
     @Async(EMAIL_EXECUTOR)
+    public void sendPasswordSetupCode(User user, String code) {
+        send(user.getEmail(), "Your password setup code", "password-setup-email", Map.of(
+                "greetingName", greetingName(user),
+                "code", code));
+    }
+
+    @Async(EMAIL_EXECUTOR)
     public void sendEmailChangeConfirmation(String newEmail, String token) {
         send(newEmail, "Confirm your new email address", "email-change-confirmation", Map.of(
                 "newEmail", newEmail,

@@ -108,17 +108,17 @@ public class AuthController {
 
     @PostMapping("/change-email")
     @Operation(summary = "Request verification token to change email")
-    public ResponseEntity<Void> requestChange(
+    public ResponseEntity<Void> initiateEmailChange(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody EmailChangeRequest request
     ) {
-        authService.requestEmailChange(principal.id(), request);
+        authService.initiateEmailChange(principal.id(), request);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/confirm-email")
     @Operation(summary = "Verify and change email")
-    public ResponseEntity<Void> confirmChange(
+    public ResponseEntity<Void> confirmEmailChange(
             @RequestParam
             @NotBlank(message = "Token is required")
             @Size(min = 43, max = 43, message = "Token must be exactly 43 characters")
@@ -134,10 +134,10 @@ public class AuthController {
 
     @PostMapping("/passkeys/initialize")
     @Operation(summary = "Initialize passkey registration.")
-    public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> startPasskeyRegistration(
+    public ResponseEntity<ApiResponse<PasskeyOptionsResponse>> initiatePasskeyRegistration(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        PasskeyOptionsResponse response = authService.startPasskeyRegistration(principal.id());
+        PasskeyOptionsResponse response = authService.initiatePasskeyRegistration(principal.id());
         return ResponseEntity.ok(ApiResponse.success("Passkey Registration Initiated", response));
     }
 
@@ -153,8 +153,8 @@ public class AuthController {
 
     @PostMapping("/passkeys/challenge")
     @Operation(summary = "Generate passkey authentication challenge.")
-    public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> startPasskeyAuthentication() {
-        PublicKeyCredentialRequestOptions response = authService.startPasskeyAuthentication();
+    public ResponseEntity<ApiResponse<PublicKeyCredentialRequestOptions>> initiatePasskeyAuthentication() {
+        PublicKeyCredentialRequestOptions response = authService.initiatePasskeyAuthentication();
         return ResponseEntity.ok(ApiResponse.success("Passkey Challenge Sent Successfully", response));
     }
 
@@ -195,7 +195,7 @@ public class AuthController {
     public ResponseEntity<Void> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request
     ) {
-        authService.requestPasswordReset(request);
+        authService.initiatePasswordReset(request);
         return ResponseEntity.noContent().build();
     }
 

@@ -105,6 +105,7 @@ All endpoints are under `/api/v1`. **Public** endpoints need no token; everythin
 | Passkeys | `POST /auth/passkeys/challenge`, `/auth/passkeys/login` | public |
 | Passkeys | `POST /auth/passkeys/initialize`, `/auth/passkeys/register`; `GET /auth/passkeys`; `DELETE /auth/passkeys/{id}` | authenticated |
 | User | `GET /users/me`, `POST /users/me/deletion-request`, `DELETE /users/me` | authenticated |
+| User | `POST /users/me/setup-password-request`, `POST /users/me/setup-password` (accounts without a password) | authenticated |
 | Audit | `GET /audits/me` | authenticated |
 | Audit | `GET /audits` | admin only (closed until you add roles) |
 

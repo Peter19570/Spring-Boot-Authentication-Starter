@@ -31,6 +31,24 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Current User Information", response));
     }
 
+    @PostMapping("/me/setup-password-request")
+    @Operation(summary = "Request an emailed code to set up a password.")
+    public ResponseEntity<Void> requestPasswordSetup(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        userService.initiatePasswordSetup(principal.id());
+        return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/me/setup-password")
+    @Operation(summary = "Set up initial password for a user account.")
+    public ResponseEntity<Void> setupPassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody PasswordSetupRequest request
+    ) {
+        userService.setupPassword(request, principal.id());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/me/deletion-request")
     @Operation(summary = "Request account deletion.")
     public ResponseEntity<Void> requestDelete(
@@ -46,17 +64,7 @@ public class UserController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody AccountDeletionRequest request
     ) {
-        userService.confirmSoftDelete(principal.id(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/me/setup-password")
-    @Operation(summary = "Set up initial password for a user account.")
-    public ResponseEntity<Void> setupPassword(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @Valid @RequestBody PasswordSetupRequest request
-    ) {
-        userService.setupPassword(request, principal.id());
+        userService.confirmDeletion(principal.id(), request);
         return ResponseEntity.noContent().build();
     }
 }

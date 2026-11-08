@@ -23,7 +23,7 @@ import com.example.authstarter.features.auth.repo.RefreshTokenRepo;
 import com.example.authstarter.features.auth.service.helpers.AuthHelper;
 import com.example.authstarter.features.auth.service.memory.EVTService;
 import com.example.authstarter.features.auth.service.memory.PRTService;
-import com.example.authstarter.features.auth.service.memory.PasskeyOptionsService;
+import com.example.authstarter.features.auth.service.memory.POService;
 import com.example.authstarter.features.auth.service.notification.EmailService;
 import com.example.authstarter.features.user.model.User;
 import com.example.authstarter.features.user.repo.UserRepo;
@@ -48,7 +48,6 @@ import static com.example.authstarter.features.audit.enums.AuditAction.*;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_GRACE;
 import static com.example.authstarter.features.auth.constants.JwtConstants.REFRESH_VALUE;
 import static com.example.authstarter.features.auth.service.helpers.AuthHelper.hashToken;
-import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Service
 @Transactional
@@ -56,6 +55,7 @@ import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getC
 public class AuthService {
 
     private final UserRepo userRepo;
+    private final POService poService;
     private final JwtService jwtService;
     private final AuthMapper authMapper;
     private final AuthHelper authHelper;
@@ -67,7 +67,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepo refreshTokenRepo;
     private final ApplicationEventPublisher eventPublisher;
-    private final PasskeyOptionsService passkeyOptionsService;
     private final WebAuthnRelyingPartyOperations relyingPartyOperations;
 
     /**
@@ -171,7 +170,7 @@ public class AuthService {
      * PASSKEY AUTHENTICATION METHODS HERE
      */
 
-    public PasskeyOptionsResponse startPasskeyRegistration(UUID userId) {
+    public PasskeyOptionsResponse initiatePasskeyRegistration(UUID userId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -181,7 +180,7 @@ public class AuthService {
             PublicKeyCredentialCreationOptions options =
                     relyingPartyOperations.createPublicKeyCredentialCreationOptions(optionsRequest);
 
-            passkeyOptionsService.saveRegistration(userId, options);
+            poService.saveRegistration(userId, options);
             return PasskeyOptionsResponse.toResponse(options);
         }
 
@@ -191,7 +190,7 @@ public class AuthService {
 
     public PasskeyResponse finishPasskeyRegistration(PasskeyRegistrationRequest request, UUID userId) {
 
-        PublicKeyCredentialCreationOptions options = passkeyOptionsService.takeRegistration(userId);
+        PublicKeyCredentialCreationOptions options = poService.takeRegistration(userId);
         RelyingPartyPublicKey publicKey = new RelyingPartyPublicKey(request.credential(), request.label());
 
         if (options != null){
@@ -215,20 +214,20 @@ public class AuthService {
         throw new ValidationException("Registration session missing or expired");
     }
 
-    public PublicKeyCredentialRequestOptions startPasskeyAuthentication() {
+    public PublicKeyCredentialRequestOptions initiatePasskeyAuthentication() {
 
         var optionsRequest = new ImmutablePublicKeyCredentialRequestOptionsRequest(null);
 
         PublicKeyCredentialRequestOptions options =
                 relyingPartyOperations.createCredentialRequestOptions(optionsRequest);
 
-        passkeyOptionsService.saveAuthentication(options);
+        poService.saveAuthentication(options);
         return options;
     }
 
     public AuthResponse finishPasskeyAuthentication(PasskeyLoginRequest request) {
 
-        PublicKeyCredentialRequestOptions options = passkeyOptionsService.takeAuthentication(request.credential());
+        PublicKeyCredentialRequestOptions options = poService.takeAuthentication(request.credential());
 
         if (options != null){
             var authenticationRequest = new RelyingPartyAuthenticationRequest(options, request.credential());
@@ -300,7 +299,7 @@ public class AuthService {
                 "Email verified successfully"));
     }
 
-    public void requestEmailChange(UUID userId, EmailChangeRequest request) {
+    public void initiateEmailChange(UUID userId, EmailChangeRequest request) {
         User user = authHelper.getUserFromDatabase(userId);
         String newEmail = request.newEmail();
 
@@ -344,7 +343,7 @@ public class AuthService {
      * PASSWORD RELATED METHODS HERE
      */
 
-    public void requestPasswordReset(ForgotPasswordRequest request) {
+    public void initiatePasswordReset(ForgotPasswordRequest request) {
         // Always return silently so this endpoint can't be used to discover which emails exist.
         userRepo.findByEmailAndDeletedAtIsNull(request.email()).ifPresent(user -> {
             boolean hasNoPassword = user.getPassword() == null;
@@ -366,6 +365,7 @@ public class AuthService {
         User user = authHelper.getUserFromDatabase(UUID.fromString(userId));
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         refreshTokenRepo.deleteAllByUserId(user.getId());
+        authHelper.resolveAuthProviders(user, "LOCAL");
         user.setLocked(false);
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
@@ -373,5 +373,4 @@ public class AuthService {
         eventPublisher.publishEvent(AuditRequest.log(user, PASSWORD_RESET,
                 "User reset password successfully"));
     }
-
 }

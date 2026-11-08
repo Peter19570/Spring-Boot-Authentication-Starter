@@ -11,6 +11,7 @@ public record UserDetailedResponse(
         String picture,
         boolean emailVerified,
         String provider,
+        boolean hasPassword,
         Instant createdAt
 ) {
 }
