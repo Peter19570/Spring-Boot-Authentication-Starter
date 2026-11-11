@@ -27,8 +27,8 @@ public class AuditService {
     private final AuditRepo auditRepo;
     private final AuditMapper auditMapper;
 
-    @Async(AUDIT_EXECUTOR)
     @EventListener
+    @Async(AUDIT_EXECUTOR)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createAuditLog(AuditRequest request) {
         AuditLog audit = AuditLog.builder()
