@@ -42,6 +42,7 @@ example/
     │   │   │       └── CustomUserDetailsService.java
     │   │   ├── constants
     │   │   │   ├── CorsConstants.java
+    │   │   │   ├── HelperConstants.java
     │   │   │   ├── JwtConstants.java
     │   │   │   ├── RateLimitConstants.java
     │   │   │   └── SecurityConstants.java

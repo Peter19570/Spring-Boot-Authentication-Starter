@@ -40,16 +40,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.example.authstarter.features.audit.enums.AuditAction.*;
+import static com.example.authstarter.features.auth.constants.HelperConstants.LOCK_DURATION;
+import static com.example.authstarter.features.auth.constants.HelperConstants.MAX_FAILED_ATTEMPTS;
 import static com.example.authstarter.features.shared.constants.CacheConstants.USERS;
 import static com.example.authstarter.features.shared.utils.ClientInfoUtils.getClientInfo;
 
 @Component
 @RequiredArgsConstructor
 public class AuthHelper {
-
-    private static final String NOT_SET = "not-set";
-    private static final int MAX_FAILED_ATTEMPTS = 5;
-    private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
 
     private final UserRepo userRepo;
     private final UserMapper userMapper;
@@ -127,7 +125,7 @@ public class AuthHelper {
         processLockedAccount(user);
         resetAccountLock(user);
 
-        if (NOT_SET.equals(user.getFirstName()) || NOT_SET.equals(user.getLastName())) {
+        if (isUnset(user.getFirstName()) || isUnset(user.getLastName())) {
             authMapper.updateEntityFromGooglePayload(payload, user);
 
             eventPublisher.publishEvent(AuditRequest.log(user, SOCIAL_LINK,
@@ -140,8 +138,8 @@ public class AuthHelper {
 
     public NameParts extractUsernameFromEmail(String email){
         int atIndex = email.indexOf("@");
-        String firstName = NOT_SET;
-        String lastName = NOT_SET;
+        String firstName = null;
+        String lastName = null;
 
         if (atIndex > 0){
             String tempName = email.substring(0, atIndex);
@@ -259,5 +257,9 @@ public class AuthHelper {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Hashing failed", e);
         }
+    }
+
+    private static boolean isUnset(String value) {
+        return value == null || value.isBlank() || value.isEmpty();
     }
 }

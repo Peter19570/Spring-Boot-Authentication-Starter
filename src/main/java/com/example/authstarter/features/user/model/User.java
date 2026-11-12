@@ -36,16 +36,15 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private int failedLoginAttempts = 0;
 
-    // Add roles here
+    // Add roles here...
 
-    public static final String NOT_SET = "not-set";
 
-    /** The provider column holds a comma-separated list (e.g. "GOOGLE,PASSKEY"). */
+    // Helpers...
+
     public boolean hasProvider(String name) {
         return provider == null || !Arrays.asList(provider.split(",")).contains(name);
     }
 
-    /** Full name, or null when no real name is set. */
     public String displayName() {
         boolean noFirst = isUnset(firstName);
         boolean noLast = isUnset(lastName);
@@ -57,7 +56,7 @@ public class User extends BaseEntity {
     }
 
     private static boolean isUnset(String value) {
-        return value == null || value.isBlank() || NOT_SET.equals(value);
+        return value == null || value.isBlank() || value.isEmpty();
     }
 
 }
