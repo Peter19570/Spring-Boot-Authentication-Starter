@@ -28,6 +28,7 @@
         <url/>
     </scm>
     <properties>
+        <lombok.version>1.18.48</lombok.version>
         <java.version>25</java.version>
     </properties>
     <dependencies>

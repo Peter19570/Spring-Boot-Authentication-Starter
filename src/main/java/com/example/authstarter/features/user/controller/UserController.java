@@ -39,6 +39,7 @@ public class UserController {
         userService.initiatePasswordSetup(principal.id());
         return ResponseEntity.noContent().build();
     }
+
     @PostMapping("/me/setup-password")
     @Operation(summary = "Set up initial password for a user account.")
     public ResponseEntity<Void> setupPassword(

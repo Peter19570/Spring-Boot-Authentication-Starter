@@ -27,13 +27,8 @@ public class User extends BaseEntity {
     private Instant deletedAt;
     private String provider;
 
-    @Column(nullable = false)
     private boolean emailVerified = false;
-
-    @Column(nullable = false)
     private boolean isLocked = false;
-
-    @Column(nullable = false)
     private int failedLoginAttempts = 0;
 
     // Add roles here...
@@ -56,7 +51,7 @@ public class User extends BaseEntity {
     }
 
     private static boolean isUnset(String value) {
-        return value == null || value.isBlank() || value.isEmpty();
+        return value == null || value.isBlank();
     }
 
 }
